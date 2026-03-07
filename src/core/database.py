@@ -10,15 +10,32 @@ class DataBase():
                         "Category INTEGER NOT NULL);")
         except Exception as e:
             print(e)
-        self.data = self.check_data()
             
-    def check_data(self):
-        self.cursor.execute("SELECT * FROM Categories")
-        return self.cursor.fetchall()
+    def check_data(self, option):
+        if option != 0:
+            try:
+                self.cursor.execute(f"SELECT Name, Category FROM Categories WHERE Id = {option}")
+                return self.cursor.fetchall()
+            except Exception as e:
+                print(e)
+        else:
+            self.cursor.execute("SELECT * FROM Categories")
+            return self.cursor.fetchall()
     
-    def insert_values(self, category_name, category_type):
+    def insert_values(self, new_category):
         insert = "INSERT INTO Categories (Name, Category) VALUES (?, ?)"
-        values = (category_name, category_type)
+        values = (new_category.category_name, new_category.category_type)
         
         self.cursor.execute(insert, values)
+        self.connection.commit()
+        
+    def update_values(self, option, value, cat_id):
+        if option == 0:
+            new_values = (value, cat_id)
+            insert = "UPDATE Categories SET Name = ? WHERE Id = ?"
+            self.cursor.execute(insert, new_values)
+        else:
+            new_values = (value, cat_id)
+            insert = "UPDATE Categories SET Category = ? WHERE Id = ?"
+            self.cursor.execute(insert, new_values)
         self.connection.commit()

@@ -48,6 +48,13 @@ def validation_date(message):
         except ValueError:
             print("The date does not exist or the format is incorrect (use YYYY-MM-DD)")
 
+def show_transactions(transactions):
+    if len(transactions) != 0:
+        for row in transactions:
+            print(f"ID: {row[0]}, Date: {row[1]}, Concept: {row[2]}, Amount: {row[3]}, Category ID: {row[4]}")
+    else:
+        print("There are no transactions on this date")
+
 def main():
     while True:
         print("\n"+"="*60)
@@ -165,7 +172,6 @@ def main():
                 print("3. Delete a transaction")
                 print("4. Filter transactions")
                 print("5. Exit the transaction tab")
-
                 option_transaction_section = validation_range("Choose an option: ", 1, 5)
                 if option_transaction_section == 1:
                     if len(dbc.check_data(0)) ==  0:
@@ -177,7 +183,7 @@ def main():
                         transaction_date = validation_date("Enter the date (YYYY-MM-DD) or Enter for today's date: ")
                         transaction_concept = input("Enter the transaction concept: ")
                         transaction_amount = validation_range("Enter the amount: ", 0.01, float("inf"))
-                        transaction_category_id = validation_range("Enter the ID of the category it belongs to: ", 1, len(dbc. check_data(0)))
+                        transaction_category_id = validation_id("Enter the ID of the category it belongs to: ", dbc.consult_id())
                         transaction_category_id = dbc.check_data(transaction_category_id)[0][0]
                         try:
                             new_transaction = Transaction(transaction_date, transaction_concept, transaction_amount, transaction_category_id)
@@ -232,6 +238,42 @@ def main():
                                 break
                             else:
                                 print("Enter only numbers, and that it falls within the existing categories")
+                elif option_transaction_section == 3:
+                    if len(dbt.check_data(0)) ==  0:
+                        print("\nThere are no transactions, create one to get started")
+                    else:
+                        print("\nList of transactions")
+                        for row in dbt.check_data(0):
+                            print(f"ID: {row[0]}, Date: {row[1]}, Concept: {row[2]}, Amount: {row[3]}, Category ID: {row[4]}")
+                        transaction_id = validation_id("Enter the ID of the transaction to delete: ", dbt.consult_id())
+                        dbt.delete_values(transaction_id)
+                        print("\nTransaction successfully deleted")
+                        print("-"*40)
+                elif option_transaction_section == 4:
+                    while True:
+                        print("\nFilter list")
+                        print("1. Today")
+                        print("2. Last 7 days")
+                        print("3. This month")
+                        print("4. Previous Month")
+                        print("5. This Year")
+                        print("6. Personalizado")
+                        print("7. Back")
+                        option_filter_transactions = validation_range("Choose an option: ", 1, 7)
+                        if 1 <= option_filter_transactions <= 5:
+                            show_transactions(dbt.filter_transactions(option_filter_transactions))
+                        elif option_filter_transactions == 6:
+                            start_date = validation_date("Enter the start date for the range: ")
+                            end_date = validation_date("Enter the end date for the range: ")
+                            show_transactions(dbt.filter_transactions(option_filter_transactions, start_date, end_date))
+                        else:
+                            print("\nLeaving...")
+                            print("-"*40)
+                            break
+                else:
+                    print("\nExiting the transactions tab")
+                    print("-"*40+"\n")
+                    break
         else:
             print("\nThank you for using MoneyWise")
             print("="*60)

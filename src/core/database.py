@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import date, datetime, timedelta
 
 class DataBaseCategories():
     def __init__(self):
@@ -112,5 +113,49 @@ class DataBaseTransactions():
             self.cursor.execute(insert, new_values)
         self.connection.commit()
         
-db = DataBaseCategories()
-print(db.check_data(5))
+    def delete_values(self, tran_id):
+        self.cursor.execute(f"DELETE FROM Transactions WHERE Id = {tran_id}")
+        self.connection.commit()
+        
+    def filter_transactions(self, option, start_date=None, end_date=None):
+        if option == 1:
+            today = date.today().isoformat()
+            insert = "SELECT * FROM Transactions WHERE Date = ?"
+            self.cursor.execute(insert, (today,))
+            return self.cursor.fetchall()
+        elif option == 2:
+            today = date.today()
+            seven_days_ago = today.replace(day=today.day - 6)
+            print(seven_days_ago)
+            values = (seven_days_ago, today)
+            insert = "SELECT * FROM Transactions WHERE Date BETWEEN ? AND ?"
+            self.cursor.execute(insert, values)
+            return self.cursor.fetchall()
+        elif option == 3:
+            today = date.today()
+            first_day_month = today.replace(day = 1)
+            values = (first_day_month, today)
+            insert = "SELECT * FROM Transactions WHERE Date BETWEEN ? AND ?"
+            self.cursor.execute(insert, values)
+            return self.cursor.fetchall()
+        elif option == 4:
+            today = date.today()
+            first_day_month = today.replace(day = 1)
+            first_day_previus_month = today.replace(month = today.month - 1, day = 1)
+            last_day_previus_month = first_day_month - timedelta(days=1)
+            values = (first_day_previus_month, last_day_previus_month)
+            insert = "SELECT * FROM Transactions WHERE Date BETWEEN ? AND ?"
+            self.cursor.execute(insert, values)
+            return self.cursor.fetchall()
+        elif option == 5:
+            today = date.today()
+            first_day_year = today.replace(month = 1, day = 1)
+            values = (first_day_year, today)
+            insert = "SELECT * FROM Transactions WHERE Date BETWEEN ? AND ?"
+            self.cursor.execute(insert, values)
+            return self.cursor.fetchall()
+        elif option == 6:
+            values = (start_date, end_date)
+            insert = "SELECT * FROM Transactions WHERE Date BETWEEN ? AND ?"
+            self.cursor.execute(insert, values)
+            return self.cursor.fetchall()

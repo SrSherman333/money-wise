@@ -1,4 +1,5 @@
 from src.core.database import DataBaseCategories, DataBaseTransactions
+from src.core.analyzer import Analyzer
 from src.core.models import Category, Transaction
 from datetime import date, datetime
 
@@ -26,7 +27,7 @@ def validation_edit_values(message, list_id):
     while True:
         value = input(message)
         if value.isdigit() and int(value) in list_id:
-            return value
+            return int(value)
         elif value == "":
             print("The type was not updated")
             return None
@@ -129,7 +130,10 @@ def main():
                                 new_category_type = "Income"
                             else:
                                 new_category_type = "Expense"
-                            dbc.update_values(1, new_category_type, category_id)
+                            try:
+                                dbc.update_values(1, new_category_type, category_id)
+                            except Exception as e:
+                                print(e)
                             print("\nOperation completed successfully")
                             print("-"*40)
                         else:
@@ -274,6 +278,22 @@ def main():
                     print("\nExiting the transactions tab")
                     print("-"*40+"\n")
                     break
+        elif option_menu == 3:
+            while True:
+                print("\n"+"-"*40)
+                print("Dashboard tab")
+                print("-"*40+"\n")
+                
+                print("Description: This section shows a summary of the activity with money and graphs\n")
+                dbt = DataBaseTransactions()
+                
+                print("1. This month's summary")
+                print("2. Summary of the previous month")
+                print("3. Custom range")
+                print("4. Back")
+                option_dashboard_section = validation_range("Choose an option: ", 1, 4)
+                if option_dashboard_section == 1:
+                    analyzer = Analyzer(dbt.filter_transactions(3))
         else:
             print("\nThank you for using MoneyWise")
             print("="*60)

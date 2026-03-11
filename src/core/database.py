@@ -8,7 +8,7 @@ class DataBaseCategories():
             self.cursor = self.connection.cursor()
             self.cursor.execute("CREATE TABLE IF NOT EXISTS Categories (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"\
                         "Name VARCHAR(100) NOT NULL,"\
-                        "Category INTEGER NOT NULL);")
+                        "Category VARCHAR(100) NOT NULL);")
         except Exception as e:
             print(e)
             
@@ -159,3 +159,6 @@ class DataBaseTransactions():
             insert = "SELECT * FROM Transactions WHERE Date BETWEEN ? AND ?"
             self.cursor.execute(insert, values)
             return self.cursor.fetchall()
+        
+dbt = DataBaseTransactions()
+print(dbt.filter_transactions(3))

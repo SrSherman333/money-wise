@@ -159,6 +159,3 @@ class DataBaseTransactions():
             insert = "SELECT * FROM Transactions WHERE Date BETWEEN ? AND ?"
             self.cursor.execute(insert, values)
             return self.cursor.fetchall()
-        
-dbt = DataBaseTransactions()
-print(dbt.filter_transactions(3))

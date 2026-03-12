@@ -1,6 +1,7 @@
 from src.core.database import DataBaseCategories, DataBaseTransactions
 from src.core.analyzer import Analyzer
 from src.core.models import Category, Transaction
+from src.core.exporter import export_tables
 from datetime import date, datetime
 
 def validation_range(message, min_value, max_value):
@@ -72,9 +73,10 @@ def main():
         print("1. Categories")
         print("2. Transactions")
         print("3. Dashboard")
-        print("4. Exit")
+        print("4. Export tables")
+        print("5. Exit")
         
-        option_menu = validation_range("Choose an option: ", 1, 4)
+        option_menu = validation_range("Choose an option: ", 1, 5)
         if option_menu == 1:
             while True:
                 print("\n"+"-"*40)
@@ -304,6 +306,38 @@ def main():
                     Analyzer(dbt.filter_transactions(6, start_date, end_date))
                 else:
                     print("\nExiting the dashboard tab")
+                    print("-"*40+"\n")
+                    break
+        elif option_menu == 4:
+            while True:
+                print("\n"+"-"*40)
+                print("Export tables")
+                print("-"*40+"\n")
+                
+                print("Description: In this section you can export the tables (Categories and Transactions) to CSV or XLSX format\n")
+                dbc = DataBaseCategories()
+                dbt = DataBaseTransactions()
+                
+                print("1. Export to CSV")
+                print("2. Export to XLSX")
+                print("3. Back")
+                option_export_section = validation_range("Choose an option: ", 1, 3)
+                if option_export_section == 1:
+                    try:
+                        export_tables(1)
+                        print("\nData exported successfully")
+                        print("-"*40)
+                    except Exception as e:
+                        print(e)
+                elif option_export_section == 2:
+                    try:
+                        export_tables(2)
+                        print("\nData exported successfully")
+                        print("-"*40)
+                    except Exception as e:
+                        print(e)
+                else:
+                    print("\nExiting the Export tables tab")
                     print("-"*40+"\n")
                     break
         else:

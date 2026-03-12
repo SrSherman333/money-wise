@@ -46,7 +46,7 @@ class Analyzer():
         
     def section_graphs(self):
         while True:
-            option_graphs = input("Generate graphs? yes/no: ")
+            option_graphs = input("\nGenerate graphs? yes/no: ")
             if option_graphs.lower() == "yes":
                 print("Generating graphs...")
                 plt.figure(figsize=(10, 5))
@@ -65,8 +65,54 @@ class Analyzer():
                 plt.axis("equal")
                 plt.legend()
                 plt.tight_layout()
-                plt.savefig("pie chart.png", dpi=150)
-                print("✓ Pie chart saved as 'pie chart.png'")
+                plt.savefig("pie_chart.png", dpi=150)
+                print("✓ Pie chart saved as 'pie_chart.png'")
+                
+                plt.figure(figsize=(10, 5))
+                labels = ["Expenses", "Income"]
+                values = [self.total_expenses, self.total_incomes]
+                colors = plt.cm.tab10(np.linspace(0, 1, 2))
+                bars = plt.bar(labels, values, color=colors, edgecolor="black")
+                for bar in bars:
+                    height = bar.get_height()
+                    plt.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                            f"{height:.2f}$", ha="center", va="bottom", fontweight="bold")
+                if self.current_balance < 0:
+                    plt.text(0.5, self.total_expenses * 0.9, f"Less income than expenses (Current balance: {self.current_balance:.2f}$)",
+                            fontsize=12, color="red", ha="center", bbox=dict(boxstyle="round,pad=0.3", facecolor="yellow", alpha=0.5))
+                plt.suptitle("Comparison of Expenses vs Income", fontsize=14, y=0.98)
+                plt.title(f"Current Balance: {self.current_balance:.2f}$")
+                plt.xlabel("Expenses and Income", fontsize=12)
+                plt.ylabel("Money used", fontsize=12)
+                plt.grid(True, alpha=0.3, axis="y")
+                plt.tight_layout()
+                plt.savefig("bar_chart.png", dpi=150)
+                print("✓ Bar chart saved as 'bar_chart.png'")
+                
+                plt.figure(figsize=(10, 5))
+                list_transactions_ordened = sorted(self.list_transactions, key=lambda x: x[1])
+                x_axis = []
+                y_axis = []
+                for i in list_transactions_ordened:
+                    x_axis.append(i[1])
+                    y_axis.append(i[3])
+                plt.plot(x_axis, y_axis, marker="o", linewidth=2, markersize=8, color="steelblue",
+                        label="Accumulated Balance")
+                plt.suptitle("Evolution of Transactions", fontsize=14, y=0.98)
+                plt.xlabel("Elapsed dates")
+                plt.ylabel("Money")
+                plt.xticks(x_axis)
+                plt.grid(True, alpha=0.3)
+                plt.legend()
+                plt.tight_layout()
+                plt.savefig("line_chart.png", dpi=150)
+                print("✓ Line chart saved as 'line_chart.png'")
+                
                 plt.show()
+                
+                print("\nSuccessfully completed summary")
+                print("-"*40)
+                break
             else:
-                pass
+                print("\nSuccessfully completed summary")
+                print("-"*40)

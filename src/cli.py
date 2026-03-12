@@ -40,8 +40,11 @@ def validation_date(message):
             transaction_date = input(message)
             if transaction_date:
                 object_date = datetime.strptime(transaction_date, "%Y-%m-%d").date()
-                final_date = object_date.isoformat()
-                return final_date
+                if object_date > date.today():
+                    print("You cannot record future transactions")
+                else:
+                    final_date = object_date.isoformat()
+                    return final_date
             else:
                 final_date = date.today().isoformat()
                 print("Today's date used")
@@ -92,7 +95,6 @@ def main():
                 print("2. Edit a category")
                 print("3. Delete a category")
                 print("4. Exit the Categories tab")
-
                 option_category_section = validation_range("Choose an option: ", 1, 4)
                 if option_category_section == 1:
                     category_name = input("\nEnter the category name: ")
@@ -293,11 +295,21 @@ def main():
                 print("4. Back")
                 option_dashboard_section = validation_range("Choose an option: ", 1, 4)
                 if option_dashboard_section == 1:
-                    analyzer = Analyzer(dbt.filter_transactions(3))
+                    Analyzer(dbt.filter_transactions(3))
+                elif option_dashboard_section == 2:
+                    Analyzer(dbt.filter_transactions(4))
+                elif option_dashboard_section == 3:
+                    start_date = validation_date("Enter the start date for the range: ")
+                    end_date = validation_date("Enter the end date for the range: ")
+                    Analyzer(dbt.filter_transactions(6, start_date, end_date))
+                else:
+                    print("\nExiting the dashboard tab")
+                    print("-"*40+"\n")
+                    break
         else:
             print("\nThank you for using MoneyWise")
             print("="*60)
             break
-    
+
 if __name__ == "__main__":
     main()

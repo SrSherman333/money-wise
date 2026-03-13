@@ -1,3 +1,15 @@
+"""
+Console version of the program.
+
+It handles user interaction, with numerical options to navigate between sections
+
+- DataBaseCategories/DataBaseTransactions: Clases para manejar las tablas de la base de datos
+- Analyzer: Clase para realizar los respectivos calculos del dashboard
+- Category/Transaction: Formato correcto para los datos de las respectivas tablas
+- export_tables: Función para exportar las tablas (CSV/XLSX)
+- date/datetime: Module to implement and validate dates
+"""
+
 from src.core.database import DataBaseCategories, DataBaseTransactions
 from src.core.analyzer import Analyzer
 from src.core.models import Category, Transaction
@@ -5,6 +17,23 @@ from src.core.exporter import export_tables
 from datetime import date, datetime
 
 def validation_range(message, min_value, max_value):
+    """
+    Validates whether the user input meets the specified requirements (with a range, 
+    [minimum value, maximum value])
+    
+    Args:
+        message (str): Message to be displayed in the input (example: "Choose an option")
+        min_value (int): Minimum possible value for user input
+        max_value (int): Maximum possible value for user input
+        
+    Returns:
+        int: User input after verifying its validity
+        
+    Raises
+        Out of range: If the entrance is outside the established limits [min_value. max_value]
+        ValueError: If text or symbols are entered
+    """
+    
     while True:
         try:
             value = int(input(message))
@@ -15,6 +44,23 @@ def validation_range(message, min_value, max_value):
             print("Enter a valid number")
             
 def validation_id(message, list_id):
+    """
+    Validates whether the user input meets the specified requirements 
+    (list of numbers, used in this case for table IDs).
+    
+    Args:
+        message (str): Message to be displayed in the input (example: "Choose an option")
+        list_id (list): List with a tuple inside, containing all the ids from the tables 
+                        (returned by the database)
+        
+    Returns:
+        int: User input after verifying its validity
+        
+    Raises
+        Invalid index: If you enter a number that does not belong to any ID
+        ValueError: If text or symbols are entered
+    """
+    
     while True:
         try:
             value = int(input(message))
@@ -25,6 +71,24 @@ def validation_id(message, list_id):
             print("Enter only numbers")
             
 def validation_edit_values(message, list_id):
+    """
+    It's the same as the previous function, except this one is used to edit values, 
+    since it allows you to press enter without any input and thus keep the same value, 
+    something that didn't happen in the previous function.
+    
+    Args:
+        message (str): Message to be displayed in the input (example: "Choose an option")
+        list_id (list): List with a tuple inside, containing all the ids from the tables 
+                        (returned by the database)
+        
+    Returns:
+        int: User input after verifying its validity
+        None: If you do not enter anything (do not edit the value)
+        
+    Raises
+        Invalid index: If you enter a number that does not belong to any ID
+    """
+    
     while True:
         value = input(message)
         if value.isdigit() and int(value) in list_id:
@@ -36,6 +100,22 @@ def validation_edit_values(message, list_id):
             print("Enter a valid index")
             
 def validation_date(message):
+    """
+    Validates whether what the user entered is actually a valid date
+    
+    Args:
+        message (str): Message to be displayed in the input (example: "Choose an option")
+        
+    Returns:
+        str/isoformat: The date entered, if it was written correctly
+        str/isoformat: If you simply press enter, it will return the current date
+        
+    Raises
+        Future date: If a future (invalid) date is entered, a message is displayed indicating that it is 
+        not possible to enter future dates
+        ValueError: If the entered date does not exist or the format is incorrect
+    """
+    
     while True:
         try:
             transaction_date = input(message)
@@ -54,6 +134,20 @@ def validation_date(message):
             print("The date does not exist or the format is incorrect (use YYYY-MM-DD)")
 
 def show_transactions(transactions):
+    """
+    List all the data specified above in the database
+    
+    Args:
+        transactions (list): List with the respective data consulted in the database
+        
+    Returns:
+        print: The data in the list is presented through a loop
+        
+    Raises
+        There are no values: If there are no values in the list, it will simply indicate that they do not 
+        exist and that you must create them before using this function
+    """
+    
     if len(transactions) != 0:
         for row in transactions:
             print(f"ID: {row[0]}, Date: {row[1]}, Concept: {row[2]}, Amount: {row[3]}, Category ID: {row[4]}")
@@ -61,6 +155,25 @@ def show_transactions(transactions):
         print("There are no transactions on this date")
 
 def main():
+    """
+    Main entry point for the console version of MoneyWise
+    
+    Manages the program's main loop by displaying a menu with the following sections:
+        - Categories (CRUD and Income/Expense type management)
+        - Transactions (CRUD and date filters)
+        - Dashboard (financial summary and charts)
+        - Export tables to CSV or XLSX
+        
+    Each section has its own sub-loop that handles specific operations until the user decides to return 
+    to the main menu
+    
+    Returns:
+        None
+    """
+    
+    # ================================
+    # Main loop of the program
+    # ================================
     while True:
         print("\n"+"="*60)
         print("  MONEY WISE - MANAGE YOUR MONEY")
@@ -77,6 +190,9 @@ def main():
         print("5. Exit")
         
         option_menu = validation_range("Choose an option: ", 1, 5)
+        # ------------------------------
+        # SECTION: CATEGORIES
+        # ------------------------------
         if option_menu == 1:
             while True:
                 print("\n"+"-"*40)
@@ -98,6 +214,7 @@ def main():
                 print("3. Delete a category")
                 print("4. Exit the Categories tab")
                 option_category_section = validation_range("Choose an option: ", 1, 4)
+                # Option to create categories------------------------------------------------------------
                 if option_category_section == 1:
                     category_name = input("\nEnter the category name: ")
                     category_type = validation_range("Enter the category type (1. Income - 2. Expense): ", 1, 2)
@@ -113,6 +230,7 @@ def main():
                         print("-"*40)
                     except Exception as e:
                         print(e)
+                # Option to edit categories--------------------------------------------------------------
                 elif option_category_section == 2:
                     if len(dbc.check_data(0)) ==  0:
                         print("\nThere are no categories, create one to get started")
@@ -144,6 +262,7 @@ def main():
                             print("The type was not updated")
                             print("\nOperation completed successfully")
                             print("-"*40)
+                # Option to delete categories------------------------------------------------------------
                 elif option_category_section == 3:
                     if len(dbc.check_data(0)) ==  0:
                         print("\nThere are no categories, create one to get started")
@@ -155,10 +274,14 @@ def main():
                         dbc.delete_values(category_id)
                         print("\nCategory successfully deleted")
                         print("-"*40)
+                # Option to exit categories--------------------------------------------------------------
                 else:
                     print("\nExiting the categories tab")
                     print("-"*40+"\n")
                     break
+        # ------------------------------
+        # SECTION: TRANSACTIONS
+        # ------------------------------
         elif option_menu == 2:
             while True:
                 print("\n"+"-"*40)
@@ -181,6 +304,7 @@ def main():
                 print("4. Filter transactions")
                 print("5. Exit the transaction tab")
                 option_transaction_section = validation_range("Choose an option: ", 1, 5)
+                # Option to create transactions----------------------------------------------------------
                 if option_transaction_section == 1:
                     if len(dbc.check_data(0)) ==  0:
                         print("\nThere are no categories, create one to get started")
@@ -200,6 +324,7 @@ def main():
                             print("-"*40)
                         except Exception as e:
                             print(e)
+                # Option to edit transactions------------------------------------------------------------
                 elif option_transaction_section == 2:
                     if len(dbt.check_data(0)) ==  0:
                         print("\nThere are no transactions, create one to get started")
@@ -246,6 +371,7 @@ def main():
                                 break
                             else:
                                 print("Enter only numbers, and that it falls within the existing categories")
+                # Option to delete transactions----------------------------------------------------------
                 elif option_transaction_section == 3:
                     if len(dbt.check_data(0)) ==  0:
                         print("\nThere are no transactions, create one to get started")
@@ -257,6 +383,7 @@ def main():
                         dbt.delete_values(transaction_id)
                         print("\nTransaction successfully deleted")
                         print("-"*40)
+                # Option to filter transactions----------------------------------------------------------
                 elif option_transaction_section == 4:
                     while True:
                         print("\nFilter list")
@@ -278,10 +405,14 @@ def main():
                             print("\nLeaving...")
                             print("-"*40)
                             break
+                # Option to exit transactions------------------------------------------------------------
                 else:
                     print("\nExiting the transactions tab")
                     print("-"*40+"\n")
                     break
+        # ------------------------------
+        # SECTION: DASHBOARD
+        # ------------------------------
         elif option_menu == 3:
             while True:
                 print("\n"+"-"*40)
@@ -296,18 +427,25 @@ def main():
                 print("3. Custom range")
                 print("4. Back")
                 option_dashboard_section = validation_range("Choose an option: ", 1, 4)
+                # Option to generate a summary for this month--------------------------------------------
                 if option_dashboard_section == 1:
                     Analyzer(dbt.filter_transactions(3))
+                # Option to generate a summary of the previous month-------------------------------------
                 elif option_dashboard_section == 2:
                     Analyzer(dbt.filter_transactions(4))
+                # Option to generate a summary of the range preferred by the user------------------------
                 elif option_dashboard_section == 3:
                     start_date = validation_date("Enter the start date for the range: ")
                     end_date = validation_date("Enter the end date for the range: ")
                     Analyzer(dbt.filter_transactions(6, start_date, end_date))
+                # option to exit the dashboard-----------------------------------------------------------
                 else:
                     print("\nExiting the dashboard tab")
                     print("-"*40+"\n")
                     break
+        # ------------------------------
+        # SECTION: EXPORT TABLES
+        # ------------------------------
         elif option_menu == 4:
             while True:
                 print("\n"+"-"*40)
@@ -316,30 +454,39 @@ def main():
                 
                 print("Description: In this section you can export the tables (Categories and Transactions) to CSV or XLSX format\n")
                 dbc = DataBaseCategories()
-                dbt = DataBaseTransactions()
                 
                 print("1. Export to CSV")
                 print("2. Export to XLSX")
                 print("3. Back")
                 option_export_section = validation_range("Choose an option: ", 1, 3)
+                # Option to export to CSV----------------------------------------------------------------
                 if option_export_section == 1:
-                    try:
-                        export_tables(1)
-                        print("\nData exported successfully")
-                        print("-"*40)
-                    except Exception as e:
-                        print(e)
+                    if len(dbc.check_data(0)) ==  0:
+                        print("\nThere are no categories, create one to get started")
+                    else:
+                        try:
+                            export_tables(1)
+                            print("\nData exported successfully")
+                            print("-"*40)
+                        except Exception as e:
+                            print(e)
+                # Option to export to XLSX---------------------------------------------------------------
                 elif option_export_section == 2:
-                    try:
-                        export_tables(2)
-                        print("\nData exported successfully")
-                        print("-"*40)
-                    except Exception as e:
-                        print(e)
+                    if len(dbc.check_data(0)) ==  0:
+                        print("\nThere are no categories, create one to get started")
+                    else:
+                        try:
+                            export_tables(2)
+                            print("\nData exported successfully")
+                            print("-"*40)
+                        except Exception as e:
+                            print(e)
+                # Exit the table export option-----------------------------------------------------------
                 else:
                     print("\nExiting the Export tables tab")
                     print("-"*40+"\n")
                     break
+        # Exit the program-------------------------------------------------------------------------------
         else:
             print("\nThank you for using MoneyWise")
             print("="*60)

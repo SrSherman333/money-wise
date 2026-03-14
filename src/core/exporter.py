@@ -1,8 +1,25 @@
+"""
+It handles exporting table data to CSV and XLSX formats
+
+- pandas: To convert the data to Dataframes and then to the formats mentioned above
+- sqlite3: To obtain the respective data
+"""
+
 import pandas as pd
 import sqlite3
 
 def export_tables(option):
-    if option == 1:
+    """
+    Export the data using one option, as this chooses which of the two formats it will be exported in
+    
+    Args:
+        option (int): Decide in which format it will be exported (1: CSV, 2: XLSX)
+        
+    Returns:
+        Depending on the option chosen, it will return the files in the respective format
+    """
+    
+    if option == 1: # CSV--------------------------------------------------------------------------------
         connection = sqlite3.connect("data/user_data.sqlite3")
         data_categories = "SELECT * FROM Categories"
         df = pd.read_sql_query(data_categories, connection)
@@ -15,7 +32,7 @@ def export_tables(option):
         print("✓ Table of Transactions saved as 'export_transactions.csv'")
         
         connection.close()
-    else:
+    else: #XLSX -----------------------------------------------------------------------------------------
         connection = sqlite3.connect("data/user_data.sqlite3")
         data_categories = "SELECT * FROM Categories"
         df = pd.read_sql_query(data_categories, connection)

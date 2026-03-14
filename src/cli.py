@@ -3,11 +3,11 @@ Console version of the program.
 
 It handles user interaction, with numerical options to navigate between sections
 
-- DataBaseCategories/DataBaseTransactions: Clases para manejar las tablas de la base de datos
-- Analyzer: Clase para realizar los respectivos calculos del dashboard
-- Category/Transaction: Formato correcto para los datos de las respectivas tablas
-- export_tables: Función para exportar las tablas (CSV/XLSX)
-- date/datetime: Module to implement and validate dates
+- DataBaseCategories/DataBaseTransactions: Classes for managing database tables
+- Analyzer: Class to perform the respective dashboard calculations
+- Category/Transaction: Correct format for the data in the respective tables
+- export_tables: Function to export tables (CSV/XLSX)
+- date/datetime: Module to implement and validate data
 """
 
 from src.core.database import DataBaseCategories, DataBaseTransactions

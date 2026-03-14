@@ -1,10 +1,35 @@
+"""
+Calculations for the dashboard.
+
+Generates a summary of money handling based on the chosen option (This month, previous month, custom range), 
+calculations, and graph creation
+
+- DataBaseCategories: Class to handle the data in the Categories table
+- matplotlib.pyplot: To generate the 3 corresponding graphs
+- numpy: To calculate the list of colors in bar and pie charts
+"""
+
 from src.core.database import DataBaseCategories
 import matplotlib.pyplot as plt
 import numpy as np
 dbc = DataBaseCategories()
 
 class Analyzer():
+    """
+    Class responsible for summarizing the money
+    """
+    
     def __init__(self, list_transactions):
+        """
+        Definition of variables and lists to perform the calculations
+        
+        Args:
+            list_transactions: List with the selected data (This month, Previous month, Custom range)
+            
+        Returns:
+            None
+        """
+        
         self.list_transactions = list_transactions
         self.list_income = []
         self.list_expense = []
@@ -13,6 +38,18 @@ class Analyzer():
         self.section_numeric_summary()
         
     def section_numeric_summary(self):
+        """
+        First section of the dashboard summary, showing information about money movement
+        
+        Args:
+            Use variables and lists that were previously defined
+            
+        Returns:
+            print: Total incomes
+            print: Total expenses
+            print: Current balances
+        """
+        
         categories = dbc.check_data(0)
         for transaction in self.list_transactions:
             for category in categories:
@@ -36,6 +73,17 @@ class Analyzer():
         self.section_category_analysis()
         
     def section_category_analysis(self):
+        """
+        Second section of the dashboard summary, showing information regarding expenses and savings
+        
+        Args:
+            Use variables and lists that were previously defined
+            
+        Returns:
+            print: Top expenses
+            print: Percentage of savingss
+        """
+        
         print("\nTop Expenses")
         self.list_expenses_ordened = sorted(self.list_expense, key=lambda x: x[3], reverse=True)
         for i, value in enumerate(self.list_expenses_ordened):
@@ -45,10 +93,28 @@ class Analyzer():
         self.section_graphs()
         
     def section_graphs(self):
+        """
+        Third section of the dashboard summary, here 3 graphs are created that detail expenses, 
+        comparison and evolution of money. In addition to automatically saving the graphics in .png files
+        
+        Args:
+            Use variables and lists that were previously defined
+            
+        Returns:
+            Pie chart: Chart showing the distribution of expenses to compare where the most was spent
+            Bar chart: A chart showing a comparison of expenses and income, indicating if the current 
+                        balance is negative.
+            Line chart: A graph showing the evolution of transactions with their respective dates, 
+                        to analyze when more or less was spent
+        """
+        
         while True:
             option_graphs = input("\nGenerate graphs? yes/no: ")
             if option_graphs.lower() == "yes":
                 print("Generating graphs...")
+                # ================================
+                # Pie chart
+                # ================================
                 plt.figure(figsize=(10, 5))
                 labels = []
                 values = []
@@ -68,6 +134,9 @@ class Analyzer():
                 plt.savefig("pie_chart.png", dpi=150)
                 print("✓ Pie chart saved as 'pie_chart.png'")
                 
+                # ================================
+                # Bar chart
+                # ================================
                 plt.figure(figsize=(10, 5))
                 labels = ["Expenses", "Income"]
                 values = [self.total_expenses, self.total_incomes]
@@ -89,6 +158,9 @@ class Analyzer():
                 plt.savefig("bar_chart.png", dpi=150)
                 print("✓ Bar chart saved as 'bar_chart.png'")
                 
+                # ================================
+                # Line chart
+                # ================================
                 plt.figure(figsize=(10, 5))
                 list_transactions_ordened = sorted(self.list_transactions, key=lambda x: x[1])
                 x_axis = []

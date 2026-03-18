@@ -1,13 +1,14 @@
 import customtkinter as ctk
 import tkinter as tk
 from src.gui.components.tables import Tables
-from src.core.database import DataBaseCategories
+from src.core.database import DataBaseCategories, DataBaseTransactions
 from src.core.models import Category
 
 class CategoryWindow(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
         self.dbc = DataBaseCategories()
+        self.dbt = DataBaseTransactions()
         self.list_results_labels = []
         self.configure(fg_color = "#648a64")
         self.create_widgets()
@@ -30,7 +31,7 @@ class CategoryWindow(ctk.CTkFrame):
         lbl_title_table.grid(row=0, column=0, pady=10)
         
         total_data_categories = self.dbc.check_data(0)
-        self.table_categories = Tables(frm_table, 1, total_data_categories)
+        self.table_categories = Tables(frm_table, 1, total_data_categories, parent_ref=self)
         self.table_categories.grid(row=1, column=0)
             
         # ------------------------------
@@ -48,7 +49,7 @@ class CategoryWindow(ctk.CTkFrame):
         lbl_name = ctk.CTkLabel(frm_edit_create_categories, text="Name:", fg_color="#648a64", 
                                 text_color="#e1e3ac", corner_radius=20, 
                                 font=ctk.CTkFont(size=13, weight="bold"))
-        lbl_name.place(relx=0.15, rely=0.4, anchor=tk.CENTER)
+        lbl_name.place(relx=0.20, rely=0.4, anchor=tk.CENTER)
         
         self.entry_name = ctk.CTkEntry(frm_edit_create_categories, font=ctk.CTkFont(size=13, weight="bold"),
                                 placeholder_text="Example: Food", width=200)
@@ -57,7 +58,7 @@ class CategoryWindow(ctk.CTkFrame):
         lbl_category = ctk.CTkLabel(frm_edit_create_categories, text="Category:", fg_color="#648a64", 
                                 text_color="#e1e3ac", corner_radius=20, 
                                 font=ctk.CTkFont(size=13, weight="bold"))
-        lbl_category.place(relx=0.15, rely=0.62, anchor=tk.CENTER)
+        lbl_category.place(relx=0.20, rely=0.62, anchor=tk.CENTER)
         
         self.smb_category = ctk.CTkSegmentedButton(frm_edit_create_categories, values=["Income", "Expense"], 
                                         fg_color="#648a64", text_color="#46685b", corner_radius=20, 
@@ -102,44 +103,64 @@ class CategoryWindow(ctk.CTkFrame):
         self.information_labels(total_data_categories)
         
     def information_labels(self, total_data_categories):
+        total_transactions = self.dbt.check_data(0)
         total_categories = len(total_data_categories)
         most_used_category = []
-        predominant_type = ""
+        predominant_type = []
         
-        list_categories = {}
-        list_types = {}
-
-        "I made a mistake here; I should do this with the transactions table. (correct 'Most used category')"
+        list_categories = {i[4] : 0 for i in total_transactions}
+        list_types = {i[2] : 0 for i in total_data_categories}
+        
         for i in total_data_categories:
-            list_categories[i[1]] = 0
-            list_types[i[2]] = 0
-            
-        for i in total_data_categories:
-            list_categories[i[1]] += 1
             list_types[i[2]] += 1
             
+        for i in total_transactions:
+            list_categories[i[4]] += 1
+            
         max_value = max(list_categories.values())
-        predominant_type = max(list_types)
+        max_value_predominant_type = max(list_types.values())
             
         for key, value in list_categories.items():
             if value == max_value:
                 most_used_category.append(key)
                 
+        for key, value in list_types.items():
+            if value == max_value_predominant_type:
+                predominant_type.append(key)
+                
         self.list_results_labels[0].configure(text=total_categories)
+        
         if len(most_used_category) == 1:
             self.list_results_labels[1].configure(text=most_used_category[0])
         elif 2 <= len(most_used_category) <= 3:
             self.list_results_labels[1].configure(text=", ".join(most_used_category))
+        elif len(most_used_category) == len(total_transactions):
+            self.list_results_labels[1].configure(text="All categories are being used the same number of times")
         else:
-            self.list_results_labels[1].configure(text=", ".join(most_used_category))
+            self.list_results_labels[1].configure(text="Many categories are being used the same number of times")
             
-        self.list_results_labels[2].configure(text=predominant_type)
+        if len(predominant_type) > 1:
+            self.list_results_labels[2].configure(text="Same number in both")
+        else:
+            self.list_results_labels[2].configure(text=predominant_type[0])
         
     def create_category(self):
+        actual_data = self.dbc.check_data(0)
         new_name = self.entry_name.get()
         new_category = self.smb_category.get()
+        
+        for name in actual_data:
+            if new_name.strip().lower() == name[1].strip().lower():
+                name_repeated = True
+                break
+            else:
+                name_repeated = False
+        
         if new_name == "":
             print("Enter a value")
+        elif name_repeated == True:
+            print("There cannot be duplicate categories")
         else:
             self.dbc.insert_values(Category(new_name, new_category))
             self.table_categories.refresh()
+            self.information_labels(self.dbc.check_data(0))

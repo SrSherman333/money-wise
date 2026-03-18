@@ -13,11 +13,13 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 class Tables(CTkTable):
-    def __init__(self, master, option, total_data_categories,**kwargs):
+    def __init__(self, master, option, total_data_categories, parent_ref, **kwargs):
         self.dbc = DataBaseCategories()
+        self.parent_ref = parent_ref
+        self.parent = master
         if option == 1:
             data = total_data_categories
-            values = [("ID", "Name", "Category", "Action")]
+            values = [("№", "Name", "Category", "Action")]
             
             for row in data:
                 values.append(row + ("",))
@@ -26,6 +28,9 @@ class Tables(CTkTable):
             
         weights = [40, 200, 120, 50]
         super().__init__(master, values=values, **kwargs)
+        
+        for i, row in enumerate(data, start=1):
+            self.insert(i, column=0, value=i)
         
         for i, weight in enumerate(weights):
             self.edit_column(i, width=weight)
@@ -58,15 +63,15 @@ class Tables(CTkTable):
     def delete_category(self, id_cat):
         self.dbc.delete_values(id_cat)
         self.refresh()
+        self.parent_ref.information_labels(self.dbc.check_data(0))
         
     def refresh(self):
-        parent = self.master
         self.destroy()
-        lbl_title_table = ctk.CTkLabel(parent, text="Table of Categories", 
+        lbl_title_table = ctk.CTkLabel(self.parent, text="Table of Categories", 
                             fg_color="#46685b", text_color="#e1e3ac", corner_radius=20, 
                             font=ctk.CTkFont(size=14, weight="bold"))
         lbl_title_table.grid(row=0, column=0, pady=10)
-        table_categories = Tables(parent, 1)
+        table_categories = Tables(self.parent, 1, self.dbc.check_data(0), self.parent_ref)
         table_categories.grid(row=1, column=0)
         
     def edit_category(self, id_cat):

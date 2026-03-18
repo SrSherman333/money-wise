@@ -61,7 +61,7 @@ class DataBaseCategories():
             except Exception as e:
                 print(e)
         else:
-            self.cursor.execute("SELECT * FROM Categories")
+            self.cursor.execute("SELECT * FROM Categories ORDER BY Name ASC")
             return self.cursor.fetchall()
         
     def consult_id(self):

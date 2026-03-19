@@ -15,6 +15,7 @@ def resource_path(relative_path):
 class Tables(CTkTable):
     def __init__(self, master, option, total_data_categories, parent_ref, **kwargs):
         self.dbc = DataBaseCategories()
+        self.row_clicked = None
         self.parent_ref = parent_ref
         self.parent = master
         if option == 1:
@@ -51,6 +52,7 @@ class Tables(CTkTable):
         
         for i, row in enumerate(data, start=1):
             category_id = row[0]
+            actual_row = i
             
             self.insert(
                 row=i, column=3, value="", image=trash_icon_photo,
@@ -58,7 +60,7 @@ class Tables(CTkTable):
             )
             self.edit(row=i, column=3, hover=True, hover_color="red")
             self.edit(row=i, column=1, hover=True, hover_color="#213435", 
-                    command=lambda id_cat = category_id: self.edit_category(id_cat))
+                    command=lambda id_cat = category_id, act_row = actual_row: self.edit_category(id_cat, act_row))
             
     def delete_category(self, id_cat):
         self.dbc.delete_values(id_cat)
@@ -74,5 +76,25 @@ class Tables(CTkTable):
         table_categories = Tables(self.parent, 1, self.dbc.check_data(0), self.parent_ref)
         table_categories.grid(row=1, column=0)
         
-    def edit_category(self, id_cat):
-        print(id_cat)
+    def edit_category(self, id_cat, act_row):
+        self.parent_ref.cat_id = id_cat
+        
+        self.parent_ref.lbl_title.configure(text="Edit")
+        if self.row_clicked is not None and self.row_clicked != act_row:
+            self.edit_row(self.row_clicked, border_width=0)
+            
+        if self.row_clicked == act_row:
+            self.edit_row(self.row_clicked, border_width=0)
+            self.row_clicked = None
+            self.parent_ref.entry_name.delete(0, "end")
+            self.parent_ref.entry_name.focus()
+            self.parent_ref.lbl_title.configure(text="Create")
+            self.parent_ref.smb_category.set("Income")
+        else:
+            self.edit_row(act_row, border_width=2, border_color="white")
+            self.row_clicked = act_row
+            values_act_row = self.get_row(act_row)
+            self.parent_ref.entry_name.delete(0, "end")
+            self.parent_ref.entry_name.insert(0, values_act_row[1])
+            self.parent_ref.smb_category.set(values_act_row[2])
+            self.parent_ref.entry_name.focus()

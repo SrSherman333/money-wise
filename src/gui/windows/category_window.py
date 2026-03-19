@@ -9,6 +9,7 @@ class CategoryWindow(ctk.CTkFrame):
         super().__init__(master)
         self.dbc = DataBaseCategories()
         self.dbt = DataBaseTransactions()
+        self.cat_id = None
         self.list_results_labels = []
         self.configure(fg_color = "#648a64")
         self.create_widgets()
@@ -41,10 +42,10 @@ class CategoryWindow(ctk.CTkFrame):
                                                 width=400, height=150)
         frm_edit_create_categories.grid(row=0, column=1, sticky="nsew", padx=5)
         
-        lbl_title = ctk.CTkLabel(frm_edit_create_categories, text="Create", 
+        self.lbl_title = ctk.CTkLabel(frm_edit_create_categories, text="Create", 
                                         fg_color="#46685b", text_color="#e1e3ac", corner_radius=20, 
                                         font=ctk.CTkFont(size=14, weight="bold"))
-        lbl_title.place(relx=0.5, rely=0.15, anchor=tk.CENTER)
+        self.lbl_title.place(relx=0.5, rely=0.15, anchor=tk.CENTER)
         
         lbl_name = ctk.CTkLabel(frm_edit_create_categories, text="Name:", fg_color="#648a64", 
                                 text_color="#e1e3ac", corner_radius=20, 
@@ -68,11 +69,11 @@ class CategoryWindow(ctk.CTkFrame):
         self.smb_category.place(relx=0.65, rely=0.62, anchor=tk.CENTER)
         self.smb_category.set("Income")
         
-        btn_category = ctk.CTkButton(frm_edit_create_categories, text="Save", 
+        self.btn_category = ctk.CTkButton(frm_edit_create_categories, text="Save", 
                                     font=ctk.CTkFont(size=13, weight="bold"), text_color="#46685b", 
                                     border_color="#46685b", fg_color="#a6b985", hover_color="#213435",
-                                    border_width=2, command=self.create_category)
-        btn_category.place(relx=0.5, rely=0.85, anchor=tk.CENTER)
+                                    border_width=2, command=self.create_edit_category)
+        self.btn_category.place(relx=0.5, rely=0.85, anchor=tk.CENTER)
         
         # ------------------------------
         # SECTION: INFORMATION
@@ -144,23 +145,49 @@ class CategoryWindow(ctk.CTkFrame):
         else:
             self.list_results_labels[2].configure(text=predominant_type[0])
         
-    def create_category(self):
+    def create_edit_category(self):
+        actual_state = self.lbl_title.cget("text")
         actual_data = self.dbc.check_data(0)
         new_name = self.entry_name.get()
         new_category = self.smb_category.get()
         
-        for name in actual_data:
-            if new_name.strip().lower() == name[1].strip().lower():
-                name_repeated = True
-                break
+        if actual_state == "Create":
+            for name in actual_data:
+                if new_name.strip().lower() == name[1].strip().lower():
+                    repeated = True
+                    self.entry_name.delete(0, "end")
+                    self.entry_name.configure(border_color="red", border_width=2)
+                    self.entry_name.insert(0, "Error: Existing category")
+                    self.btn_category.configure(state="disabled")
+                    self.after(2000, lambda:self.entry_name.delete(0, "end"))
+                    self.after(2000, lambda:self.entry_name.configure(border_width=0))
+                    self.after(2000, lambda:self.btn_category.configure(state="normal"))
+                    break
+                else:
+                    repeated = False
+                    
+            if new_name == "":
+                self.entry_name.configure(border_color="red", border_width=2)
+                self.entry_name.insert(0, "Error: Enter a name")
+                self.btn_category.configure(state="disabled")
+                self.after(2000, lambda:self.entry_name.delete(0, "end"))
+                self.after(2000, lambda:self.entry_name.configure(border_width=0))
+                self.after(2000, lambda:self.btn_category.configure(state="normal"))
+            elif repeated == True:
+                pass
             else:
-                name_repeated = False
-        
-        if new_name == "":
-            print("Enter a value")
-        elif name_repeated == True:
-            print("There cannot be duplicate categories")
+                self.dbc.insert_values(Category(new_name, new_category))
+                self.table_categories.refresh()
+                self.information_labels(self.dbc.check_data(0))
         else:
-            self.dbc.insert_values(Category(new_name, new_category))
-            self.table_categories.refresh()
-            self.information_labels(self.dbc.check_data(0))
+            if new_name == "":
+                print("Enter a value")
+            else:
+                self.dbc.update_values(0, new_name, self.cat_id)
+                self.dbc.update_values(1, new_category, self.cat_id)
+                self.table_categories.refresh()
+                self.information_labels(self.dbc.check_data(0))
+                self.lbl_title.configure(text="Create")
+                self.entry_name.delete(0, "end")
+                self.entry_name.focus()
+                self.smb_category.set("Income")

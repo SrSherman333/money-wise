@@ -22,17 +22,17 @@ class CategoryWindow(ctk.CTkFrame):
         self.rowconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
         
-        frm_table = ctk.CTkScrollableFrame(self, fg_color="#a6b985", bg_color="#648a64", width=450,
+        self.frm_table = ctk.CTkScrollableFrame(self, fg_color="#a6b985", bg_color="#648a64", width=450,
                                         scrollbar_button_color="#46685b", scrollbar_button_hover_color="#213435")
-        frm_table.grid(row=0, column=0, sticky="nsew", rowspan=2, padx=5)
+        self.frm_table.grid(row=0, column=0, sticky="nsew", rowspan=2, padx=5)
         
-        lbl_title_table = ctk.CTkLabel(frm_table, text="Table of Categories", 
+        lbl_title_table = ctk.CTkLabel(self.frm_table, text="Table of Categories", 
                             fg_color="#46685b", text_color="#e1e3ac", corner_radius=20, 
                             font=ctk.CTkFont(size=14, weight="bold"))
         lbl_title_table.grid(row=0, column=0, pady=10)
         
         total_data_categories = self.dbc.check_data(0)
-        self.table_categories = Tables(frm_table, 1, total_data_categories, parent_ref=self)
+        self.table_categories = Tables(self.frm_table, 1, total_data_categories, parent_ref=self)
         self.table_categories.grid(row=1, column=0)
             
         # ------------------------------
@@ -102,6 +102,13 @@ class CategoryWindow(ctk.CTkFrame):
             self.list_results_labels.append(results_labels)
             
         self.information_labels(total_data_categories)
+        
+    def refresh(self):
+        if self.table_categories:
+            self.table_categories.destroy()
+            total_data_categories = self.dbc.check_data(0)
+            self.table_categories = Tables(self.frm_table, 1, total_data_categories, parent_ref=self)
+            self.table_categories.grid(row=1, column=0)
         
     def information_labels(self, total_data_categories):
         total_transactions = self.dbt.check_data(0)
@@ -178,7 +185,7 @@ class CategoryWindow(ctk.CTkFrame):
                 pass
             else:
                 self.dbc.insert_values(Category(new_name, new_category))
-                self.table_categories.refresh()
+                self.refresh()
                 self.information_labels(self.dbc.check_data(0))
         elif actual_state == "Edit":
             if new_name == "":
@@ -191,7 +198,7 @@ class CategoryWindow(ctk.CTkFrame):
             else:
                 self.dbc.update_values(0, new_name, self.cat_id)
                 self.dbc.update_values(1, new_category, self.cat_id)
-                self.table_categories.refresh()
+                self.refresh()
                 self.information_labels(self.dbc.check_data(0))
                 self.lbl_title.configure(text="Create")
                 self.entry_name.delete(0, "end")
@@ -211,11 +218,11 @@ class CategoryWindow(ctk.CTkFrame):
                 self.after(2000, lambda:self.entry_name.configure(state="disabled"))
             else:
                 self.entry_name.configure(state="normal")
+                self.smb_category.configure(state="normal")
                 self.dbc.delete_values(self.cat_id)
-                self.table_categories.refresh()
+                self.refresh()
                 self.information_labels(self.dbc.check_data(0))
                 self.lbl_title.configure(text="Create")
                 self.entry_name.delete(0, "end")
                 self.entry_name.focus()
                 self.smb_category.set("Income")
-                self.entry_name.configure(state="disabled")

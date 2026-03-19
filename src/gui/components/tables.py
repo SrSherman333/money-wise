@@ -63,15 +63,6 @@ class Tables(CTkTable):
             self.edit(row=i, column=1, hover=True, hover_color="#213435", 
                     command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "edit"))
         
-    def refresh(self):
-        self.destroy()
-        lbl_title_table = ctk.CTkLabel(self.parent, text="Table of Categories", 
-                            fg_color="#46685b", text_color="#e1e3ac", corner_radius=20, 
-                            font=ctk.CTkFont(size=14, weight="bold"))
-        lbl_title_table.grid(row=0, column=0, pady=10)
-        table_categories = Tables(self.parent, 1, self.dbc.check_data(0), self.parent_ref)
-        table_categories.grid(row=1, column=0)
-        
     def select_category(self, id_cat, act_row, option):
         self.parent_ref.cat_id = id_cat
         

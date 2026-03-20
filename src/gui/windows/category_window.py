@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import tkinter as tk
-from src.gui.components.tables import Tables
+from src.gui.components.tables import TableCategories
 from src.core.database import DataBaseCategories, DataBaseTransactions
 from src.core.models import Category
 
@@ -32,7 +32,7 @@ class CategoryWindow(ctk.CTkFrame):
         lbl_title_table.grid(row=0, column=0, pady=10)
         
         total_data_categories = self.dbc.check_data(0)
-        self.table_categories = Tables(self.frm_table, 1, total_data_categories, parent_ref=self)
+        self.table_categories = TableCategories(self.frm_table, total_data_categories, parent_ref=self)
         self.table_categories.grid(row=1, column=0)
             
         # ------------------------------
@@ -107,7 +107,7 @@ class CategoryWindow(ctk.CTkFrame):
         if self.table_categories:
             self.table_categories.destroy()
             total_data_categories = self.dbc.check_data(0)
-            self.table_categories = Tables(self.frm_table, 1, total_data_categories, parent_ref=self)
+            self.table_categories = TableCategories(self.frm_table, total_data_categories, parent_ref=self)
             self.table_categories.grid(row=1, column=0)
         
     def information_labels(self, total_data_categories):

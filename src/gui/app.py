@@ -1,6 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from src.gui.windows.category_window import CategoryWindow
+from src.gui.windows.transaction_window import TransactionWindow
 from PIL import Image, ImageTk
 from CTkTable import *
 import sys, os
@@ -91,15 +92,31 @@ actual_tab.grid_rowconfigure(1, weight=1)
 
 for tab_button in tabview._segmented_button._buttons_dict.values():
     tab_button.configure(font=ctk.CTkFont(size=20, weight="bold"))
+    
+description = ["This section will display all your existing tags/categories, classified as 'Income' or 'Expense'",
+            "This section will display all existing transactions, and you can filter to search for specific transactions"]
 
-description = "This section will display all your existing tags/categories, classified as 'Income' or 'Expense'"
-lbl_subtitle = ctk.CTkLabel(tabview.tab("Categories"), text=description, bg_color="#648a64", 
+# ------------------------------
+# CATEGORIES TAB
+# ------------------------------
+lbl_subtitle = ctk.CTkLabel(tabview.tab("Categories"), text=description[0], bg_color="#648a64", 
                             fg_color="#a6b985", corner_radius=20, font=ctk.CTkFont(size=15, weight="bold"),
                             text_color="#46685b")
 lbl_subtitle.grid(column=0, row=0, columnspan=2, pady=12)
 
 frm_category = CategoryWindow(tabview.tab("Categories"))
 frm_category.grid(column=0, row=1, sticky="nsew", pady=10)
+
+# ------------------------------
+# TRANSACTIONS TAB
+# ------------------------------
+lbl_subtitle = ctk.CTkLabel(tabview.tab("Transactions"), text=description[1], bg_color="#648a64", 
+                            fg_color="#a6b985", corner_radius=20, font=ctk.CTkFont(size=15, weight="bold"),
+                            text_color="#46685b")
+lbl_subtitle.grid(column=0, row=0, pady=12)
+
+frm_transaction = TransactionWindow(tabview.tab("Transactions"))
+frm_transaction.grid(column=0, row=1, sticky="nsew", pady=10)
 
 btn_back = ctk.CTkButton(pages["app_page"], text="Back", font=ctk.CTkFont(size=20, weight="bold"),
                         text_color="#46685b", bg_color="#46685b", fg_color="#a6b985",

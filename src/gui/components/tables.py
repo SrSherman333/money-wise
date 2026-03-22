@@ -1,4 +1,5 @@
 import customtkinter as ctk
+import pandas as pd
 from PIL import Image, ImageTk
 from CTkTable import *
 from src.core.database import DataBaseCategories
@@ -143,7 +144,7 @@ class TableCategories(CTkTable):
                 
                 
 class TableTransactions(CTkTable):
-    def __init__(self, master, total_data_categories, parent_ref, **kwargs):
+    def __init__(self, master, total_data_categories, parent_ref, index=None, **kwargs):
         self.dbc = DataBaseCategories()
         self.row_clicked = None
         self.state_mode = None
@@ -158,8 +159,15 @@ class TableTransactions(CTkTable):
         weights = [40, 100, 405, 100, 120, 50]
         super().__init__(master, values=values, **kwargs)
         
-        for i, row in enumerate(data, start=1):
-            self.insert(i, column=0, value=i)
+        if index:
+            if type(index) == int:
+                self.insert(1, column=0, value=index+1)
+            else:
+                for i, j in enumerate(index, start=1):
+                    self.insert(i, column=0, value=j+1)
+        else:
+            for i, row in enumerate(data, start=1):
+                self.insert(i, column=0, value=i)
         
         for i, weight in enumerate(weights):
             self.edit_column(i, width=weight)

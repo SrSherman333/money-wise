@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 import pandas as pd
-from datetime import date, timedelta
+from datetime import *
 from src.gui.components.calendar import CTkDatePicker
 from src.gui.components.tables import TableTransactions
 from src.core.database import DataBaseCategories, DataBaseTransactions
@@ -81,10 +81,10 @@ class TransactionWindow(ctk.CTkFrame):
                 self.entry_filter.focus_set()
         
         column_filter_values = ["Index", "Date", "Concept", "Amount", "Category"]
-        column_filter = ctk.CTkComboBox(self.frm_table, font=ctk.CTkFont(size=13, weight="bold"),
+        self.column_filter = ctk.CTkComboBox(self.frm_table, font=ctk.CTkFont(size=13, weight="bold"),
                                         button_color="#648a64", button_hover_color="#213435",
                                         width=100, values=column_filter_values, command=options_column_filter)
-        column_filter.grid(row=0, column=0, pady=10)
+        self.column_filter.grid(row=0, column=0, pady=10)
         
         search_text = ctk.StringVar()
         self.entry_filter = ctk.CTkEntry(self.frm_table, font=ctk.CTkFont(size=13, weight="bold"),
@@ -120,22 +120,22 @@ class TransactionWindow(ctk.CTkFrame):
                     self.entry_filter.delete(0, "end")
                 self.option_filter.focus_set()
             
-            today = date.today()
+            self.today = date.today()
             if choice == "Today":
                 self.entry_filter.configure(state="normal")
                 if self.entry_filter.get():
                     self.entry_filter.delete(0, "end")
-                self.entry_filter.insert(0, today.isoformat())
+                self.entry_filter.insert(0, self.today.isoformat())
                 self.entry_filter.configure(state="disabled")
-                df_filtered = self.df[self.df["Date"] == today]
+                df_filtered = self.df[self.df["Date"] == self.today]
                 table_data = [tuple(value) for value in df_filtered.values.tolist()]
                 self.refresh(table_data)
             elif choice == "Last 7 days":
                 self.entry_filter.configure(state="normal")
                 if self.entry_filter.get():
                     self.entry_filter.delete(0, "end")
-                seven_days_ago = today.replace(day=today.day - 6)
-                self.entry_filter.insert(0, f"{seven_days_ago.isoformat()} - {today.isoformat()}")
+                seven_days_ago = self.today.replace(day=self.today.day - 6)
+                self.entry_filter.insert(0, f"{seven_days_ago.isoformat()} - {self.today.isoformat()}")
                 self.entry_filter.configure(state="disabled")
                 df_filtered = self.df[self.df["Date"] >= seven_days_ago.isoformat()]
                 table_data = [tuple(value) for value in df_filtered.values.tolist()]
@@ -144,8 +144,8 @@ class TransactionWindow(ctk.CTkFrame):
                 self.entry_filter.configure(state="normal")
                 if self.entry_filter.get():
                     self.entry_filter.delete(0, "end")
-                first_day_month = today.replace(day = 1)
-                self.entry_filter.insert(0, f"{first_day_month.isoformat()} - {today.isoformat()}")
+                first_day_month = self.today.replace(day = 1)
+                self.entry_filter.insert(0, f"{first_day_month.isoformat()} - {self.today.isoformat()}")
                 self.entry_filter.configure(state="disabled")
                 df_filtered = self.df[self.df["Date"] >= first_day_month.isoformat()]
                 table_data = [tuple(value) for value in df_filtered.values.tolist()]
@@ -154,8 +154,8 @@ class TransactionWindow(ctk.CTkFrame):
                 self.entry_filter.configure(state="normal")
                 if self.entry_filter.get():
                     self.entry_filter.delete(0, "end")
-                first_day_month = today.replace(day=1)
-                first_day_previous_month = first_day_month.replace(month=today.month-1)
+                first_day_month = self.today.replace(day=1)
+                first_day_previous_month = first_day_month.replace(month=self.today.month-1)
                 last_day_previous_month = first_day_month - timedelta(days=1)
                 self.entry_filter.insert(0, f"{first_day_previous_month.isoformat()} - {last_day_previous_month.isoformat()}")
                 self.entry_filter.configure(state="disabled")
@@ -166,8 +166,8 @@ class TransactionWindow(ctk.CTkFrame):
                 self.entry_filter.configure(state="normal")
                 if self.entry_filter.get():
                     self.entry_filter.delete(0, "end")
-                first_day_year = today.replace(month=1, day=1)
-                self.entry_filter.insert(0, f"{first_day_year.isoformat()} - {today.isoformat()}")
+                first_day_year = self.today.replace(month=1, day=1)
+                self.entry_filter.insert(0, f"{first_day_year.isoformat()} - {self.today.isoformat()}")
                 self.entry_filter.configure(state="disabled")
                 df_filtered = self.df[self.df["Date"]>=first_day_year.isoformat()]
                 table_data = [tuple(value) for value in df_filtered.values.tolist()]
@@ -177,7 +177,7 @@ class TransactionWindow(ctk.CTkFrame):
                 self.entry_filter.configure(placeholder_text="Example: 2026-03-01 - 2026-03-07 (Dates separated by a hyphen)")
                 if self.entry_filter.get():
                     self.entry_filter.delete(0, "end")
-                self.option_filter.focus_set()
+                self.entry_filter.focus_set()
                 
             if choice == "Name":
                 self.entry_filter.configure(state="normal")
@@ -258,9 +258,10 @@ class TransactionWindow(ctk.CTkFrame):
     def execute_filter(self):
         actual_value = self.entry_filter.get()
         option_filter_value = self.option_filter.get()
+        column_filter_value = self.column_filter.get()
         dataframe_values = [tuple(value) for value in self.df.values.tolist()]
         
-        if option_filter_value == "==":
+        if option_filter_value == "==" and column_filter_value == "Index":
             if "," not in actual_value and actual_value.strip().isdigit():
                 self.entry_filter.configure(border_width=0)
                 index = int(actual_value.strip())-1
@@ -280,7 +281,7 @@ class TransactionWindow(ctk.CTkFrame):
                 self.refresh(dataframe_values)
             else:
                 self.entry_filter.configure(border_width=2, border_color="red")
-        elif option_filter_value == ">":
+        elif option_filter_value == ">" and column_filter_value == "Index":
             if actual_value and actual_value.strip().isdigit():
                 self.entry_filter.configure(border_width=0)
                 df_filtered = self.df[self.df.index > int(actual_value)-1]
@@ -292,7 +293,7 @@ class TransactionWindow(ctk.CTkFrame):
                 self.refresh(dataframe_values)
             else:
                 self.entry_filter.configure(border_width=2, border_color="red")
-        elif option_filter_value == "<":
+        elif option_filter_value == "<" and column_filter_value == "Index":
             if actual_value and actual_value.strip().isdigit():
                 self.entry_filter.configure(border_width=0)
                 df_filtered = self.df[self.df.index < int(actual_value)-1]
@@ -304,7 +305,7 @@ class TransactionWindow(ctk.CTkFrame):
                 self.refresh(dataframe_values)
             else:
                 self.entry_filter.configure(border_width=2, border_color="red")
-        elif option_filter_value == ">=":
+        elif option_filter_value == ">=" and column_filter_value == "Index":
             if actual_value and actual_value.strip().isdigit():
                 self.entry_filter.configure(border_width=0)
                 df_filtered = self.df[self.df.index >= int(actual_value)-1]
@@ -316,7 +317,98 @@ class TransactionWindow(ctk.CTkFrame):
                 self.refresh(dataframe_values)
             else:
                 self.entry_filter.configure(border_width=2, border_color="red")
-        elif option_filter_value == "<=":
+        elif option_filter_value == "<=" and column_filter_value == "Index":
+            if actual_value and actual_value.strip().isdigit():
+                self.entry_filter.configure(border_width=0)
+                df_filtered = self.df[self.df.index <= int(actual_value)-1]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                indexes = [index for index in range(len(self.df)) if index <= int(actual_value)-1]
+                self.refresh(table_data, indexes)
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe_values)
+            else:
+                self.entry_filter.configure(border_width=2, border_color="red")
+        
+        if option_filter_value == "Custom range":
+            if "to" in actual_value and actual_value.count("to")==1:
+                dates = []
+                for date in actual_value.split("to"):
+                    if date:
+                        try:
+                            object_date = datetime.strptime(date.strip(), "%Y-%m-%d").date()
+                            if object_date > self.today:
+                                self.entry_filter.configure(border_width=2, border_color="red")
+                            else:
+                                self.entry_filter.configure(border_width=0)
+                                dates.append(object_date.isoformat())
+                        except Exception as e:
+                            self.entry_filter.configure(border_width=2, border_color="red")
+                    else:
+                        pass
+                if len(dates) == 2:
+                    df_filtered = self.df[(self.df["Date"]>=dates[0]) & (self.df["Date"]<=dates[1])]
+                    table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                    self.refresh(table_data)
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe_values)
+        
+        if option_filter_value == "==" and column_filter_value == "Amount":
+            if "," not in actual_value and actual_value.strip().isdigit():
+                self.entry_filter.configure(border_width=0)
+                amount = int(actual_value.strip())
+                df_filtered = self.df[self.df["Amount"]==amount]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                self.refresh(table_data)
+            elif "," in actual_value:
+                self.entry_filter.configure(border_width=0)
+                amounts = [int(index.strip()) for index in actual_value.split(",") if index.strip().isdigit()]
+                df_filtered = self.df[self.df["Amount"].isin(amounts)]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                self.refresh(table_data)
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe_values)
+            else:
+                self.entry_filter.configure(border_width=2, border_color="red")
+        elif option_filter_value == ">" and column_filter_value == "Amount":
+            if actual_value and actual_value.strip().isdigit():
+                self.entry_filter.configure(border_width=0)
+                df_filtered = self.df[self.df.index > int(actual_value)-1]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                indexes = [index for index in range(len(self.df)) if index > int(actual_value)-1]
+                self.refresh(table_data, indexes)
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe_values)
+            else:
+                self.entry_filter.configure(border_width=2, border_color="red")
+        elif option_filter_value == "<" and column_filter_value == "Amount":
+            if actual_value and actual_value.strip().isdigit():
+                self.entry_filter.configure(border_width=0)
+                df_filtered = self.df[self.df.index < int(actual_value)-1]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                indexes = [index for index in range(len(self.df)) if index < int(actual_value)-1]
+                self.refresh(table_data, indexes)
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe_values)
+            else:
+                self.entry_filter.configure(border_width=2, border_color="red")
+        elif option_filter_value == ">=" and column_filter_value == "Amount":
+            if actual_value and actual_value.strip().isdigit():
+                self.entry_filter.configure(border_width=0)
+                df_filtered = self.df[self.df.index >= int(actual_value)-1]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                indexes = [index for index in range(len(self.df)) if index >= int(actual_value)-1]
+                self.refresh(table_data, indexes)
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe_values)
+            else:
+                self.entry_filter.configure(border_width=2, border_color="red")
+        elif option_filter_value == "<=" and column_filter_value == "Amount":
             if actual_value and actual_value.strip().isdigit():
                 self.entry_filter.configure(border_width=0)
                 df_filtered = self.df[self.df.index <= int(actual_value)-1]

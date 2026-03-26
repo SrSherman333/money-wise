@@ -16,6 +16,7 @@ class TransactionWindow(ctk.CTkFrame):
         self.df = pd.read_sql_query("SELECT * FROM Transactions", self.dbt.connection)
         self.df = self.df.sort_values(by="Date", ascending=False).reset_index(drop=True)
         self.df["№"] = self.df.index + 1
+        self.df = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
         self.data = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
         self.data["Amount"] = ["{:.2f}".format(i) for i in self.data["Amount"].values.tolist()]
         self.categories_names = [category[1] for category in self.dbc.check_data(0)]
@@ -25,13 +26,11 @@ class TransactionWindow(ctk.CTkFrame):
         self.configure(fg_color = "#648a64")
         
         self.colors_cells = {}
-        for transaction in self.data.values.tolist():
-            for category in self.categories:
-                if transaction[4] == category[1]:
-                    if category[2] == "Income":
-                        self.colors_cells[transaction[4]] = ("#88B04B", "+")
-                    else:
-                        self.colors_cells[transaction[4]] = ("#BC6C25", "-")
+        for category in self.categories:
+            if category[2] == "Income":
+                self.colors_cells[category[1]] = ("#88B04B", "+")
+            else:
+                self.colors_cells[category[1]] = ("#BC6C25", "-")
         
         self.create_widgets()
         
@@ -247,9 +246,9 @@ class TransactionWindow(ctk.CTkFrame):
                                 font=ctk.CTkFont(size=13, weight="bold"))
         lbl_date.place(relx=0.06, rely=0.35, anchor=tk.CENTER)
         
-        calendar = CTkDatePicker(frm_edit_create_delete_transactions)
-        calendar.place(relx=0.26, rely=0.35, anchor=tk.CENTER)
-        calendar.set_date_format("%Y-%m-%d")
+        self.calendar = CTkDatePicker(frm_edit_create_delete_transactions)
+        self.calendar.place(relx=0.26, rely=0.35, anchor=tk.CENTER)
+        self.calendar.set_date_format("%Y-%m-%d")
         
         lbl_concept = ctk.CTkLabel(frm_edit_create_delete_transactions, text="Concept:", fg_color="#648a64", 
                                 text_color="#e1e3ac", corner_radius=20, 
@@ -274,9 +273,13 @@ class TransactionWindow(ctk.CTkFrame):
                                 font=ctk.CTkFont(size=13, weight="bold"))
         lbl_category.place(relx=0.55, rely=0.7, anchor=tk.CENTER)
         
-        cbbox_category = ctk.CTkComboBox(frm_edit_create_delete_transactions, font=ctk.CTkFont(size=13, weight="bold"),
-                                        button_color="#648a64", button_hover_color="#213435", values=self.categories_names)
-        cbbox_category.place(relx=0.7, rely=0.7, anchor=tk.CENTER)
+        def option_cbbox_category(choice):
+            self.entry_amount.configure(border_width=2, border_color=self.colors_cells[choice][0]
+        )
+        self.cbbox_category = ctk.CTkComboBox(frm_edit_create_delete_transactions, font=ctk.CTkFont(size=13, weight="bold"),
+                                        button_color="#648a64", button_hover_color="#213435", values=self.categories_names,
+                                        command=option_cbbox_category)
+        self.cbbox_category.place(relx=0.7, rely=0.7, anchor=tk.CENTER)
         
         self.btn_category = ctk.CTkButton(frm_edit_create_delete_transactions, text="Confirm", 
                                     font=ctk.CTkFont(size=13, weight="bold"), text_color="#46685b", 
@@ -289,21 +292,31 @@ class TransactionWindow(ctk.CTkFrame):
         option_filter_value = self.option_filter.get()
         column_filter_value = self.column_filter.get()
         dataframe = [tuple(value) for value in self.data.values.tolist()]
+        if self.data["Amount"].dtype == "float64":
+            dataframe = [tuple(value) for value in self.data.values.tolist()]
+            dataframe = [(value[0], value[1], value[2], f"{value[3]:.2f}", value[4]) for value in dataframe]
+            self.data["Amount"] = [float(i.replace("$", "")) for i in self.data["Amount"].values.tolist()]
         
         if option_filter_value == "==" and column_filter_value == "Index":
             if "," not in actual_value and actual_value.strip().isdigit():
                 self.entry_filter.configure(border_width=0)
                 index = int(actual_value.strip())-1
-                df_filtered = self.data.loc[index]
-                values = tuple([value for value in df_filtered.values.tolist()])
-                values = [(int(values[0]), values[1], values[2], float(values[3]), values[4])]
-                self.refresh(values)
+                try:
+                    df_filtered = self.data.loc[index]
+                    values = tuple([value for value in df_filtered.values.tolist()])
+                    values = [(int(values[0]), values[1], values[2], str(values[3]), values[4])]
+                    self.refresh(values)
+                except Exception:
+                    self.entry_filter.configure(border_width=2, border_color="red")
             elif "," in actual_value:
                 self.entry_filter.configure(border_width=0)
                 indexes = [int(index.strip())-1 for index in actual_value.split(",") if index.strip().isdigit()]
-                df_filtered = self.data.iloc[indexes].drop_duplicates()
-                table_data = [tuple(value) for value in df_filtered.values.tolist()]
-                self.refresh(table_data)
+                try:
+                    df_filtered = self.data.iloc[indexes].drop_duplicates()
+                    table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                    self.refresh(table_data)
+                except Exception:
+                    self.entry_filter.configure(border_width=2, border_color="red")
             elif actual_value == "":
                 self.entry_filter.configure(border_width=0)
                 self.refresh(dataframe)
@@ -389,60 +402,94 @@ class TransactionWindow(ctk.CTkFrame):
         if option_filter_value == "==" and column_filter_value == "Amount":
             if "," not in actual_value and actual_value.strip().isdigit():
                 self.entry_filter.configure(border_width=0)
-                amount = int(actual_value.strip())
-                df_filtered = self.data[self.data["Amount"]==amount]
-                table_data = [tuple(value) for value in df_filtered.values.tolist()]
-                self.refresh(table_data)
+                amount = float(actual_value.strip())
+                try:
+                    df_filtered = self.df[self.df["Amount"]==amount]
+                    table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                    self.refresh(table_data)
+                except Exception as e:
+                    self.entry_filter.configure(border_width=2, border_color="red")
             elif "," in actual_value:
                 self.entry_filter.configure(border_width=0)
                 amounts = [int(index.strip()) for index in actual_value.split(",") if index.strip().isdigit()]
-                df_filtered = self.data[self.data["Amount"].isin(amounts)]
-                table_data = [tuple(value) for value in df_filtered.values.tolist()]
-                self.refresh(table_data)
+                try:
+                    df_filtered = self.df[self.df["Amount"].isin(amounts)]
+                    table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                    self.refresh(table_data)
+                except Exception as e:
+                    self.entry_filter.configure(border_width=2, border_color="red")
             elif actual_value == "":
                 self.entry_filter.configure(border_width=0)
                 self.refresh(dataframe)
             else:
                 self.entry_filter.configure(border_width=2, border_color="red")
         elif option_filter_value == ">" and column_filter_value == "Amount":
-            if actual_value and actual_value.strip().isdigit():
-                self.entry_filter.configure(border_width=0)
-                df_filtered = self.data[self.data.index > int(actual_value)-1]
-                table_data = [tuple(value) for value in df_filtered.values.tolist()]
-                self.refresh(table_data)
+            if actual_value:
+                try:
+                    float(actual_value.strip())
+                    self.entry_filter.configure(border_width=0)
+                    if self.data["Amount"].dtype != "float64":
+                        self.data["Amount"] = [float(i.replace("$", "")) for i in self.data["Amount"].values.tolist()]
+                    df_filtered = self.data[self.data["Amount"] > float(actual_value)]
+                    table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                    table_data = [(value[0], value[1], value[2], f"{value[3]:.2f}", value[4]) for value in table_data]
+                    self.refresh(table_data)
+                except ValueError:
+                    self.entry_filter.configure(border_width=2, border_color="red")
             elif actual_value == "":
                 self.entry_filter.configure(border_width=0)
                 self.refresh(dataframe)
             else:
                 self.entry_filter.configure(border_width=2, border_color="red")
         elif option_filter_value == "<" and column_filter_value == "Amount":
-            if actual_value and actual_value.strip().isdigit():
-                self.entry_filter.configure(border_width=0)
-                df_filtered = self.data[self.data.index < int(actual_value)-1]
-                table_data = [tuple(value) for value in df_filtered.values.tolist()]
-                self.refresh(table_data)
+            if actual_value:
+                try:
+                    float(actual_value.strip())
+                    self.entry_filter.configure(border_width=0)
+                    if self.data["Amount"].dtype != "float64":
+                        self.data["Amount"] = [float(i.replace("$", "")) for i in self.data["Amount"].values.tolist()]
+                    df_filtered = self.data[self.data["Amount"] < float(actual_value)]
+                    table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                    table_data = [(value[0], value[1], value[2], f"{value[3]:.2f}", value[4]) for value in table_data]
+                    self.refresh(table_data)
+                except ValueError:
+                    self.entry_filter.configure(border_width=2, border_color="red")
             elif actual_value == "":
                 self.entry_filter.configure(border_width=0)
                 self.refresh(dataframe)
             else:
                 self.entry_filter.configure(border_width=2, border_color="red")
         elif option_filter_value == ">=" and column_filter_value == "Amount":
-            if actual_value and actual_value.strip().isdigit():
-                self.entry_filter.configure(border_width=0)
-                df_filtered = self.data[self.data.index >= int(actual_value)-1]
-                table_data = [tuple(value) for value in df_filtered.values.tolist()]
-                self.refresh(table_data)
+            if actual_value:
+                try:
+                    float(actual_value.strip())
+                    self.entry_filter.configure(border_width=0)
+                    if self.data["Amount"].dtype != "float64":
+                        self.data["Amount"] = [float(i.replace("$", "")) for i in self.data["Amount"].values.tolist()]
+                    df_filtered = self.data[self.data["Amount"] >= float(actual_value)]
+                    table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                    table_data = [(value[0], value[1], value[2], f"{value[3]:.2f}", value[4]) for value in table_data]
+                    self.refresh(table_data)
+                except ValueError:
+                    self.entry_filter.configure(border_width=2, border_color="red")
             elif actual_value == "":
                 self.entry_filter.configure(border_width=0)
                 self.refresh(dataframe)
             else:
                 self.entry_filter.configure(border_width=2, border_color="red")
         elif option_filter_value == "<=" and column_filter_value == "Amount":
-            if actual_value and actual_value.strip().isdigit():
-                self.entry_filter.configure(border_width=0)
-                df_filtered = self.data[self.data.index <= int(actual_value)-1]
-                table_data = [tuple(value) for value in df_filtered.values.tolist()]
-                self.refresh(table_data)
+            if actual_value:
+                try:
+                    float(actual_value.strip())
+                    self.entry_filter.configure(border_width=0)
+                    if self.data["Amount"].dtype != "float64":
+                        self.data["Amount"] = [float(i.replace("$", "")) for i in self.data["Amount"].values.tolist()]
+                    df_filtered = self.data[self.data["Amount"] <= float(actual_value)]
+                    table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                    table_data = [(value[0], value[1], value[2], f"{value[3]:.2f}", value[4]) for value in table_data]
+                    self.refresh(table_data)
+                except ValueError:
+                    self.entry_filter.configure(border_width=2, border_color="red")
             elif actual_value == "":
                 self.entry_filter.configure(border_width=0)
                 self.refresh(dataframe)

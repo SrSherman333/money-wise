@@ -71,7 +71,7 @@ class CTkDatePicker(ctk.CTkFrame):
             self.popup.destroy()
         self.popup = ctk.CTkToplevel(self)
         self.popup.title("Select Date")
-        self.popup.geometry("+%d+%d" % (self.winfo_rootx(), self.winfo_rooty() + self.winfo_height()))
+        self.popup.geometry("+%d+%d" % (self.winfo_rootx() + self.winfo_width(), self.winfo_rooty()))
         self.popup.resizable(False, False)
         self.popup.configure(fg_color="#648a64")
 

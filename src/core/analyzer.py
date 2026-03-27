@@ -19,7 +19,7 @@ class Analyzer():
     Class responsible for summarizing the money
     """
     
-    def __init__(self, list_transactions):
+    def __init__(self, list_transactions, categories):
         """
         Definition of variables and lists to perform the calculations
         
@@ -31,44 +31,40 @@ class Analyzer():
         """
         
         self.list_transactions = list_transactions
+        self.categories = categories
         self.list_income = []
         self.list_expense = []
         self.total_incomes = 0
         self.total_expenses = 0
-        self.section_numeric_summary()
+        self.calculate()
+        
+    def calculate(self):
+        """
+        Method that performs all calculations and stores the results
+        in attributes, it does not print anything
+        """
+        
+        categories_dict = {cat[1]: cat[2] for cat in self.categories}
+        for transaction in self.list_transactions:
+            cat_name = transaction[4]
+            cat_type = categories_dict.get(cat_name)
+            if cat_type == "Income":
+                self.list_income.append(transaction)
+            else:
+                self.list_expense.append(transaction)
+                
+        self.total_incomes = sum(i[3] for i in self.list_income)
+        self.total_expenses = sum(i[3] for i in self.list_expense)
+        self.current_balance = self.total_incomes - self.total_expenses
         
     def section_numeric_summary(self):
         """
-        First section of the dashboard summary, showing information about money movement
-        
-        Args:
-            Use variables and lists that were previously defined
-            
-        Returns:
-            print: Total incomes
-            print: Total expenses
-            print: Current balances
+        Method that prints the numerical summary using the already calculated attributes
         """
         
-        categories = dbc.check_data(0)
-        for transaction in self.list_transactions:
-            for category in categories:
-                if transaction[4] == category[1]:
-                    if category[2] == "Income":
-                        self.list_income.append(transaction)
-                    else:
-                        self.list_expense.append(transaction)
-                        
         print("\nNumerical Summary")
-        for i in self.list_income:
-            self.total_incomes += i[3]
         print(f"Total Incomes: {self.total_incomes:.2f}$")
-        
-        for i in self.list_expense:
-            self.total_expenses += i[3]
         print(f"Total Expenses: {self.total_expenses:.2f}$")
-        
-        self.current_balance = self.total_incomes - self.total_expenses
         print(f"Current Balances: {self.current_balance:.2f}$")
         self.section_category_analysis()
         

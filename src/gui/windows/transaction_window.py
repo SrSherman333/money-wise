@@ -23,6 +23,8 @@ class TransactionWindow(ctk.CTkFrame):
         self.categories = self.dbc.check_data(0)
         self.cat_id = None
         self.list_results_labels = []
+        analyzer = Analyzer([tuple(value) for value in self.df.values.tolist()], self.categories)
+        self.current_balance = analyzer.current_balance
         self.configure(fg_color = "#648a64")
         
         self.colors_cells = {}
@@ -262,16 +264,17 @@ class TransactionWindow(ctk.CTkFrame):
         lbl_amount = ctk.CTkLabel(frm_edit_create_delete_transactions, text="Amount:", fg_color="#648a64", 
                                 text_color="#e1e3ac", corner_radius=20, 
                                 font=ctk.CTkFont(size=13, weight="bold"))
-        lbl_amount.place(relx=0.55, rely=0.4, anchor=tk.CENTER)
+        lbl_amount.place(relx=0.48, rely=0.4, anchor=tk.CENTER)
         
         self.entry_amount = ctk.CTkEntry(frm_edit_create_delete_transactions, font=ctk.CTkFont(size=13, weight="bold"),
                                 placeholder_text="Example: 10.00", width=150)
-        self.entry_amount.place(relx=0.7, rely=0.4, anchor=tk.CENTER)
+        self.entry_amount.place(relx=0.63, rely=0.4, anchor=tk.CENTER)
+        self.entry_amount.bind("<KeyRelease>", self.amount_control)
         
         lbl_category = ctk.CTkLabel(frm_edit_create_delete_transactions, text="Category:", fg_color="#648a64", 
                                 text_color="#e1e3ac", corner_radius=20, 
                                 font=ctk.CTkFont(size=13, weight="bold"))
-        lbl_category.place(relx=0.55, rely=0.7, anchor=tk.CENTER)
+        lbl_category.place(relx=0.48, rely=0.7, anchor=tk.CENTER)
         
         def option_cbbox_category(choice):
             self.entry_amount.configure(border_width=2, border_color=self.colors_cells[choice][0]
@@ -279,13 +282,20 @@ class TransactionWindow(ctk.CTkFrame):
         self.cbbox_category = ctk.CTkComboBox(frm_edit_create_delete_transactions, font=ctk.CTkFont(size=13, weight="bold"),
                                         button_color="#648a64", button_hover_color="#213435", values=self.categories_names,
                                         command=option_cbbox_category)
-        self.cbbox_category.place(relx=0.7, rely=0.7, anchor=tk.CENTER)
+        self.cbbox_category.place(relx=0.63, rely=0.7, anchor=tk.CENTER)
+        
+        self.entry_amount.configure(border_width=2, border_color=self.colors_cells[self.cbbox_category.get()][0])
+        
+        self.lbl_curent_balance = ctk.CTkLabel(frm_edit_create_delete_transactions, text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64", 
+                                text_color="#e1e3ac", corner_radius=20, font=ctk.CTkFont(size=13, weight="bold"),
+                                width=200, height=50, wraplength=200)
+        self.lbl_curent_balance.place(relx=0.87, rely=0.4, anchor=tk.CENTER)
         
         self.btn_category = ctk.CTkButton(frm_edit_create_delete_transactions, text="Confirm", 
                                     font=ctk.CTkFont(size=13, weight="bold"), text_color="#46685b", 
                                     border_color="#46685b", fg_color="#a6b985", hover_color="#213435",
                                     border_width=2, command=self.create_edit_delete_category)
-        self.btn_category.place(relx=0.9, rely=0.55, anchor=tk.CENTER)
+        self.btn_category.place(relx=0.87, rely=0.7, anchor=tk.CENTER)
         
     def execute_filter(self, event):
         actual_value = self.entry_filter.get()
@@ -295,7 +305,6 @@ class TransactionWindow(ctk.CTkFrame):
         if self.data["Amount"].dtype == "float64":
             dataframe = [tuple(value) for value in self.data.values.tolist()]
             dataframe = [(value[0], value[1], value[2], f"{value[3]:.2f}", value[4]) for value in dataframe]
-            self.data["Amount"] = [float(i.replace("$", "")) for i in self.data["Amount"].values.tolist()]
         
         if option_filter_value == "==" and column_filter_value == "Index":
             if "," not in actual_value and actual_value.strip().isdigit():
@@ -506,11 +515,17 @@ class TransactionWindow(ctk.CTkFrame):
         elif option_filter_value == "Type":
             if actual_value == "Expense":
                 self.entry_filter.configure(border_width=0)
+                if self.data["Amount"].dtype == "float64":
+                    self.data["Amount"] = [tuple(value) for value in self.data.values.tolist()]
+                    self.data["Amount"] = [(value[0], value[1], value[2], f"{value[3]:.2f}", value[4]) for value in dataframe]
                 df_filtered = self.data[self.data["Amount"].str.startswith("-")]
                 table_data = [tuple(value) for value in df_filtered.values.tolist()]
                 self.refresh(table_data)
             elif actual_value == "Income":
                 self.entry_filter.configure(border_width=0)
+                if self.data["Amount"].dtype == "float64":
+                    self.data["Amount"] = [tuple(value) for value in self.data.values.tolist()]
+                    self.data["Amount"] = [(value[0], value[1], value[2], f"{value[3]:.2f}", value[4]) for value in dataframe]
                 df_filtered = self.data[self.data["Amount"].str.startswith("+")]
                 table_data = [tuple(value) for value in df_filtered.values.tolist()]
                 self.refresh(table_data)
@@ -520,6 +535,28 @@ class TransactionWindow(ctk.CTkFrame):
             else:
                 self.entry_filter.configure(border_width=2, border_color="red")
             
+    def amount_control(self, event):
+        categorie = self.cbbox_category.get()
+        color_categorie = self.colors_cells[categorie][0]
+        actual_value = self.entry_amount.get()
+        
+        if actual_value.strip().isdigit() and color_categorie=="#BC6C25":
+            if float(actual_value) > self.current_balance:
+                self.entry_amount.configure(border_color="orange")
+                self.lbl_curent_balance.configure(text=f"Current Balance: {(self.current_balance-float(actual_value)):.2f}$", fg_color="orange")
+            else:
+                self.entry_amount.configure(border_color=color_categorie)
+                self.lbl_curent_balance.configure(text=f"Current Balance: {(self.current_balance-float(actual_value)):.2f}$", fg_color="#648a64")
+        elif actual_value.strip().isdigit() and color_categorie!="#BC6C25":
+            self.entry_amount.configure(border_color=color_categorie)
+            self.lbl_curent_balance.configure(text=f"Current Balance: {(self.current_balance+float(actual_value)):.2f}$", fg_color="#648a64")
+        elif actual_value == "":
+            self.entry_amount.configure(border_color=color_categorie)
+            self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64")
+        else:
+            self.entry_amount.configure(border_color="red")
+            self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64")
+        
     def refresh(self, table_data):
         if self.table_transactions:
             self.table_transactions.destroy()

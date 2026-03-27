@@ -421,6 +421,8 @@ def main():
                 
                 print("Description: This section shows a summary of the activity with money and graphs\n")
                 dbt = DataBaseTransactions()
+                dbc = DataBaseCategories()
+                categories = dbc.check_data(0)
                 
                 print("1. This month's summary")
                 print("2. Summary of the previous month")
@@ -429,15 +431,18 @@ def main():
                 option_dashboard_section = validation_range("Choose an option: ", 1, 4)
                 # Option to generate a summary for this month--------------------------------------------
                 if option_dashboard_section == 1:
-                    Analyzer(dbt.filter_transactions(3))
+                    analyzer = Analyzer(dbt.filter_transactions(3), categories)
+                    analyzer.section_numeric_summary()
                 # Option to generate a summary of the previous month-------------------------------------
                 elif option_dashboard_section == 2:
-                    Analyzer(dbt.filter_transactions(4))
+                    analyzer = Analyzer(dbt.filter_transactions(4), categories)
+                    analyzer.section_numeric_summary()
                 # Option to generate a summary of the range preferred by the user------------------------
                 elif option_dashboard_section == 3:
                     start_date = validation_date("Enter the start date for the range: ")
                     end_date = validation_date("Enter the end date for the range: ")
-                    Analyzer(dbt.filter_transactions(6, start_date, end_date))
+                    analyzer = Analyzer(dbt.filter_transactions(6, start_date, end_date), categories)
+                    analyzer.section_numeric_summary()
                 # option to exit the dashboard-----------------------------------------------------------
                 else:
                     print("\nExiting the dashboard tab")

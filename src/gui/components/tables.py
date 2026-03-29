@@ -233,7 +233,12 @@ class TableTransactions(CTkTable):
                 self.parent_ref.entry_amount.delete(0, "end")
                 self.parent_ref.cbbox_category.set(self.parent_ref.categories_names[0])
                 self.parent_ref.entry_amount.configure(border_width=2, border_color=self.parent_ref.colors_cells[self.parent_ref.categories_names[0]][0])
+                self.parent_ref.cbbox_category.configure(border_width=2, border_color=self.parent_ref.colors_cells[self.parent_ref.categories_names[0]][0])
                 self.parent_ref.lbl_title.configure(text="Create")
+                self.parent_ref.amount_column_data = self.get_column(3)
+                del self.parent_ref.amount_column_data[0]
+                self.parent_ref.amount_column_data = [float(amount.replace("$", "") ) for amount in self.parent_ref.amount_column_data]
+                self.parent_ref.amount_control()
             elif self.row_clicked == act_row and option != self.state_mode:
                 self.edit_row(act_row, border_width=2, border_color="white")
                 self.state_mode = "edit"
@@ -259,6 +264,7 @@ class TableTransactions(CTkTable):
                 self.parent_ref.entry_amount.insert(0, values_act_row[3])
                 self.parent_ref.cbbox_category.set(values_act_row[4])
                 self.parent_ref.entry_amount.configure(border_width=2, border_color=self.parent_ref.colors_cells[values_act_row[4]][0])
+                self.parent_ref.cbbox_category.configure(border_width=2, border_color=self.parent_ref.colors_cells[values_act_row[4]][0])
                 self.parent_ref.calendar.date_entry.focus()
             else:
                 self.edit_row(act_row, border_width=2, border_color="white")
@@ -285,6 +291,11 @@ class TableTransactions(CTkTable):
                 self.parent_ref.entry_amount.insert(0, values_act_row[3])
                 self.parent_ref.cbbox_category.set(values_act_row[4])
                 self.parent_ref.entry_amount.configure(border_width=2, border_color=self.parent_ref.colors_cells[values_act_row[4]][0])
+                self.parent_ref.cbbox_category.configure(border_width=2, border_color=self.parent_ref.colors_cells[values_act_row[4]][0])
+                self.parent_ref.amount_column_data = self.get_column(3)
+                del self.parent_ref.amount_column_data[0]
+                self.parent_ref.amount_column_data = [float(amount.replace("$", "") ) for amount in self.parent_ref.amount_column_data]
+                self.parent_ref.amount_control()
                 self.parent_ref.calendar.date_entry.focus()
         else:
             self.parent_ref.lbl_title.configure(text="Delete")
@@ -315,7 +326,12 @@ class TableTransactions(CTkTable):
                 self.parent_ref.entry_amount.delete(0, "end")
                 self.parent_ref.cbbox_category.set(self.parent_ref.categories_names[0])
                 self.parent_ref.entry_amount.configure(border_width=2, border_color=self.parent_ref.colors_cells[self.parent_ref.categories_names[0]][0])
+                self.parent_ref.cbbox_category.configure(border_width=2, border_color=self.parent_ref.colors_cells[self.parent_ref.categories_names[0]][0])
                 self.parent_ref.lbl_title.configure(text="Create")
+                self.parent_ref.amount_column_data = self.get_column(3)
+                del self.parent_ref.amount_column_data[0]
+                self.parent_ref.amount_column_data = [float(amount.replace("$", "") ) for amount in self.parent_ref.amount_column_data]
+                self.parent_ref.amount_control()
             elif self.row_clicked == act_row and option != self.state_mode:
                 self.edit_row(act_row, border_width=2, border_color="red")
                 self.state_mode = "delete"
@@ -336,6 +352,7 @@ class TableTransactions(CTkTable):
                 self.parent_ref.entry_amount.insert(0, values_act_row[3])
                 self.parent_ref.cbbox_category.set(values_act_row[4])
                 self.parent_ref.entry_amount.configure(border_width=2, border_color=self.parent_ref.colors_cells[values_act_row[4]][0])
+                self.parent_ref.cbbox_category.configure(border_width=2, border_color=self.parent_ref.colors_cells[values_act_row[4]][0])
                 self.parent_ref.entry_amount.configure(state="disabled")
                 self.parent_ref.cbbox_category.configure(state="disabled")
                 self.parent_ref.column_filter.configure(state="disabled")
@@ -361,6 +378,11 @@ class TableTransactions(CTkTable):
                 self.parent_ref.entry_amount.insert(0, values_act_row[3])
                 self.parent_ref.cbbox_category.set(values_act_row[4])
                 self.parent_ref.entry_amount.configure(border_width=2, border_color=self.parent_ref.colors_cells[values_act_row[4]][0])
+                self.parent_ref.cbbox_category.configure(border_width=2, border_color=self.parent_ref.colors_cells[values_act_row[4]][0])
+                self.parent_ref.amount_column_data = self.get_column(3)
+                del self.parent_ref.amount_column_data[0]
+                self.parent_ref.amount_column_data = [float(amount.replace("$", "") ) for amount in self.parent_ref.amount_column_data]
+                self.parent_ref.amount_control()
                 self.parent_ref.entry_amount.configure(state="disabled")
                 self.parent_ref.cbbox_category.configure(state="disabled")
                 self.parent_ref.column_filter.configure(state="disabled")

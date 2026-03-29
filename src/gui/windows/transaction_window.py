@@ -227,9 +227,12 @@ class TransactionWindow(ctk.CTkFrame):
         
         self.table_transactions = TableTransactions(self.frm_table, [tuple(value) for value in self.data.values.tolist()], parent_ref=self)
         self.table_transactions.grid(row=1, column=0, columnspan=3)
-        amount_column_data = self.table_transactions.get_column(3)
-        del amount_column_data[0]
-        self.data["Amount"] = amount_column_data
+        
+        self.amount_column_data = self.table_transactions.get_column(3)
+        del self.amount_column_data[0]
+        self.data["Amount"] = self.amount_column_data
+        
+        self.amount_column_data = [float(amount.replace("$", "") ) for amount in self.amount_column_data]
         
         # ------------------------------
         # SECTION: SURVEY
@@ -277,19 +280,27 @@ class TransactionWindow(ctk.CTkFrame):
         lbl_category.place(relx=0.48, rely=0.7, anchor=tk.CENTER)
         
         def option_cbbox_category(choice):
-            self.entry_amount.configure(border_width=2, border_color=self.colors_cells[choice][0]
-        )
+            self.entry_amount.configure(border_width=2, border_color=self.colors_cells[choice][0])
+            self.cbbox_category.configure(border_width=2, border_color=self.colors_cells[choice][0])
+            self.amount_control()
+        
         self.cbbox_category = ctk.CTkComboBox(frm_edit_create_delete_transactions, font=ctk.CTkFont(size=13, weight="bold"),
                                         button_color="#648a64", button_hover_color="#213435", values=self.categories_names,
                                         command=option_cbbox_category)
         self.cbbox_category.place(relx=0.63, rely=0.7, anchor=tk.CENTER)
         
         self.entry_amount.configure(border_width=2, border_color=self.colors_cells[self.cbbox_category.get()][0])
+        self.cbbox_category.configure(border_width=2, border_color=self.colors_cells[self.cbbox_category.get()][0])
         
         self.lbl_curent_balance = ctk.CTkLabel(frm_edit_create_delete_transactions, text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64", 
                                 text_color="#e1e3ac", corner_radius=20, font=ctk.CTkFont(size=13, weight="bold"),
-                                width=200, height=50, wraplength=200)
+                                width=200, wraplength=200)
         self.lbl_curent_balance.place(relx=0.87, rely=0.4, anchor=tk.CENTER)
+        
+        if self.current_balance >= 0:
+            self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64")
+        else:
+            self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="orange")
         
         self.btn_category = ctk.CTkButton(frm_edit_create_delete_transactions, text="Confirm", 
                                     font=ctk.CTkFont(size=13, weight="bold"), text_color="#46685b", 
@@ -535,27 +546,66 @@ class TransactionWindow(ctk.CTkFrame):
             else:
                 self.entry_filter.configure(border_width=2, border_color="red")
             
-    def amount_control(self, event):
-        categorie = self.cbbox_category.get()
-        color_categorie = self.colors_cells[categorie][0]
+    def amount_control(self, event=None):
+        actual_mode = self.lbl_title.cget("text")
         actual_value = self.entry_amount.get()
+        color_categorie = self.colors_cells[self.cbbox_category.get()][0]
         
-        if actual_value.strip().isdigit() and color_categorie=="#BC6C25":
-            if float(actual_value) > self.current_balance:
-                self.entry_amount.configure(border_color="orange")
-                self.lbl_curent_balance.configure(text=f"Current Balance: {(self.current_balance-float(actual_value)):.2f}$", fg_color="orange")
+        def valid_number(value):
+            try:
+                value = float(value)
+                return value if value > 0 else None
+            except ValueError:
+                return None
+        
+        if actual_value == "":
+            self.entry_amount.configure(border_color=color_categorie)
+            if self.current_balance >= 0:
+                self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64")
             else:
-                self.entry_amount.configure(border_color=color_categorie)
-                self.lbl_curent_balance.configure(text=f"Current Balance: {(self.current_balance-float(actual_value)):.2f}$", fg_color="#648a64")
-        elif actual_value.strip().isdigit() and color_categorie!="#BC6C25":
-            self.entry_amount.configure(border_color=color_categorie)
-            self.lbl_curent_balance.configure(text=f"Current Balance: {(self.current_balance+float(actual_value)):.2f}$", fg_color="#648a64")
-        elif actual_value == "":
-            self.entry_amount.configure(border_color=color_categorie)
-            self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64")
+                self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="orange")
+            return
+        
+        amount = valid_number(actual_value)
+        
+        if actual_mode in ("Edit", "Delete"):
+            if amount != None:
+                if color_categorie == "#BC6C25":
+                    amount = -amount
+                else:
+                    amount = abs(amount)
+                self.amount_column_data[self.table_transactions.row_clicked-1] = amount
+                current_balance = sum(i for i in self.amount_column_data)
+                if current_balance >= 0:
+                    self.entry_amount.configure(border_color=color_categorie)
+                    self.lbl_curent_balance.configure(text=f"Current Balance: {current_balance:.2f}$", fg_color="#648a64")
+                else:
+                    self.entry_amount.configure(border_color="orange")
+                    self.lbl_curent_balance.configure(text=f"Current Balance: {current_balance:.2f}$", fg_color="orange")
+            else:
+                self.entry_amount.configure(border_color="red")
+                if self.current_balance >= 0:
+                    self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64")
+                else:
+                    self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="orange")
         else:
-            self.entry_amount.configure(border_color="red")
-            self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64")
+            if amount != None:
+                if color_categorie=="#BC6C25":
+                    current_balance = self.current_balance-amount
+                else:
+                    current_balance = self.current_balance+amount
+                if current_balance >= 0:
+                    self.entry_amount.configure(border_color=color_categorie)
+                    self.lbl_curent_balance.configure(text=f"Current Balance: {current_balance:.2f}$", fg_color="#648a64")
+                else:
+                    self.entry_amount.configure(border_color="orange")
+                    self.lbl_curent_balance.configure(text=f"Current Balance: {current_balance:.2f}$", fg_color="orange")
+            else:
+                self.entry_amount.configure(border_color="red")
+                if self.current_balance >= 0:
+                    self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64")
+                else:
+                    self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="orange")
         
     def refresh(self, table_data):
         if self.table_transactions:

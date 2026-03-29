@@ -176,12 +176,12 @@ class TableTransactions(CTkTable):
             print(e)
             trash_icon_photo = None
         
-        for i, row in enumerate(data, start=1):
-            category_id = row[0]
-            actual_row = i
-            category = self.get(i, column=4)
+        for i, row in enumerate(data):
+            category_id = self.parent_ref.transactions[i][0]
+            actual_row = i+1
+            category = self.get(i+1, column=4)
             
-            amount = str(self.get(i, column=3))
+            amount = str(self.get(i+1, column=3))
 
             if "-" in amount:
                 amount = amount.replace("-", "")
@@ -193,13 +193,13 @@ class TableTransactions(CTkTable):
                 pass
             
             self.insert(
-                row=i, column=5, value="", image=trash_icon_photo,
+                row=i+1, column=5, value="", image=trash_icon_photo,
                 command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "delete")
             )
-            self.edit(row=i, column=5, hover=True, hover_color="red")
-            self.edit(row=i, column=2, hover=True, hover_color="#213435", 
+            self.edit(row=i+1, column=5, hover=True, hover_color="red")
+            self.edit(row=i+1, column=2, hover=True, hover_color="#213435", 
                     command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "edit"))
-            self.edit(row=i, column=3, fg_color=parent_ref.colors_cells[category][0], text=parent_ref.colors_cells[category][1]+amount+"$")
+            self.edit(row=i+1, column=3, fg_color=parent_ref.colors_cells[category][0], text=parent_ref.colors_cells[category][1]+f"{float(amount):.2f}"+"$")
         
     def select_category(self, id_cat, act_row, option):
         self.parent_ref.cat_id = id_cat

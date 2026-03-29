@@ -5,7 +5,7 @@ from datetime import *
 from src.gui.components.calendar import CTkDatePicker
 from src.gui.components.tables import TableTransactions
 from src.core.database import DataBaseCategories, DataBaseTransactions
-from src.core.models import Category
+from src.core.models import Transaction
 from src.core.analyzer import Analyzer
 
 class TransactionWindow(ctk.CTkFrame):
@@ -13,26 +13,11 @@ class TransactionWindow(ctk.CTkFrame):
         super().__init__(master)
         self.dbc = DataBaseCategories()
         self.dbt = DataBaseTransactions()
-        self.df = pd.read_sql_query("SELECT * FROM Transactions", self.dbt.connection)
-        self.df = self.df.sort_values(by="Date", ascending=False).reset_index(drop=True)
-        self.df["№"] = self.df.index + 1
-        self.df = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
-        self.data = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
-        self.data["Amount"] = ["{:.2f}".format(i) for i in self.data["Amount"].values.tolist()]
-        self.categories_names = [category[1] for category in self.dbc.check_data(0)]
-        self.categories = self.dbc.check_data(0)
         self.cat_id = None
         self.list_results_labels = []
-        analyzer = Analyzer([tuple(value) for value in self.df.values.tolist()], self.categories)
-        self.current_balance = analyzer.current_balance
         self.configure(fg_color = "#648a64")
         
-        self.colors_cells = {}
-        for category in self.categories:
-            if category[2] == "Income":
-                self.colors_cells[category[1]] = ("#88B04B", "+")
-            else:
-                self.colors_cells[category[1]] = ("#BC6C25", "-")
+        self.load_data()
         
         self.create_widgets()
         
@@ -228,12 +213,6 @@ class TransactionWindow(ctk.CTkFrame):
         self.table_transactions = TableTransactions(self.frm_table, [tuple(value) for value in self.data.values.tolist()], parent_ref=self)
         self.table_transactions.grid(row=1, column=0, columnspan=3)
         
-        self.amount_column_data = self.table_transactions.get_column(3)
-        del self.amount_column_data[0]
-        self.data["Amount"] = self.amount_column_data
-        
-        self.amount_column_data = [float(amount.replace("$", "") ) for amount in self.amount_column_data]
-        
         # ------------------------------
         # SECTION: SURVEY
         # ------------------------------
@@ -297,10 +276,7 @@ class TransactionWindow(ctk.CTkFrame):
                                 width=200, wraplength=200)
         self.lbl_curent_balance.place(relx=0.87, rely=0.4, anchor=tk.CENTER)
         
-        if self.current_balance >= 0:
-            self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64")
-        else:
-            self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="orange")
+        self.load_table_data()
         
         self.btn_category = ctk.CTkButton(frm_edit_create_delete_transactions, text="Confirm", 
                                     font=ctk.CTkFont(size=13, weight="bold"), text_color="#46685b", 
@@ -425,7 +401,7 @@ class TransactionWindow(ctk.CTkFrame):
                 amount = float(actual_value.strip())
                 try:
                     df_filtered = self.df[self.df["Amount"]==amount]
-                    table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                    table_data = [tuple([value[0], value[1], value[2], f"{value[3]:.2f}", value[4]]) for value in df_filtered.values.tolist()]
                     self.refresh(table_data)
                 except Exception as e:
                     self.entry_filter.configure(border_width=2, border_color="red")
@@ -434,7 +410,7 @@ class TransactionWindow(ctk.CTkFrame):
                 amounts = [int(index.strip()) for index in actual_value.split(",") if index.strip().isdigit()]
                 try:
                     df_filtered = self.df[self.df["Amount"].isin(amounts)]
-                    table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                    table_data = [tuple([value[0], value[1], value[2], f"{value[3]:.2f}", value[4]]) for value in df_filtered.values.tolist()]
                     self.refresh(table_data)
                 except Exception as e:
                     self.entry_filter.configure(border_width=2, border_color="red")
@@ -536,7 +512,6 @@ class TransactionWindow(ctk.CTkFrame):
                 self.entry_filter.configure(border_width=0)
                 if self.data["Amount"].dtype == "float64":
                     self.data["Amount"] = [tuple(value) for value in self.data.values.tolist()]
-                    self.data["Amount"] = [(value[0], value[1], value[2], f"{value[3]:.2f}", value[4]) for value in dataframe]
                 df_filtered = self.data[self.data["Amount"].str.startswith("+")]
                 table_data = [tuple(value) for value in df_filtered.values.tolist()]
                 self.refresh(table_data)
@@ -580,7 +555,7 @@ class TransactionWindow(ctk.CTkFrame):
                     self.entry_amount.configure(border_color=color_categorie)
                     self.lbl_curent_balance.configure(text=f"Current Balance: {current_balance:.2f}$", fg_color="#648a64")
                 else:
-                    self.entry_amount.configure(border_color="orange")
+                    self.entry_amount.configure(border_color=color_categorie)
                     self.lbl_curent_balance.configure(text=f"Current Balance: {current_balance:.2f}$", fg_color="orange")
             else:
                 self.entry_amount.configure(border_color="red")
@@ -598,7 +573,7 @@ class TransactionWindow(ctk.CTkFrame):
                     self.entry_amount.configure(border_color=color_categorie)
                     self.lbl_curent_balance.configure(text=f"Current Balance: {current_balance:.2f}$", fg_color="#648a64")
                 else:
-                    self.entry_amount.configure(border_color="orange")
+                    self.entry_amount.configure(border_color=color_categorie)
                     self.lbl_curent_balance.configure(text=f"Current Balance: {current_balance:.2f}$", fg_color="orange")
             else:
                 self.entry_amount.configure(border_color="red")
@@ -615,75 +590,146 @@ class TransactionWindow(ctk.CTkFrame):
         
     def create_edit_delete_category(self):
         actual_state = self.lbl_title.cget("text")
-        actual_data_categories = self.dbc.check_data(0)
-        actual_data_transactions = [value[4] for value in self.dbt.check_data(0)]
-        new_name = self.entry_name.get()
-        new_category = self.smb_category.get()
+        new_date = self.calendar.date_entry.get()
+        new_concept = self.txtbox_concept.get("1.0", "end-1c")
+        new_amount = self.entry_amount.get()
+        new_category = self.cbbox_category.get()
+        
+        try:
+            object_date = datetime.strptime(new_date, "%Y-%m-%d").date()
+            if object_date > date.today():
+                new_date = ""
+            else:
+                final_date = object_date.isoformat()
+                new_date = final_date
+        except ValueError:
+            new_date = ""
         
         if actual_state == "Create":
-            for name in actual_data_categories:
-                if new_name.strip().lower() == name[1].strip().lower():
-                    repeated = True
-                    self.entry_name.delete(0, "end")
-                    self.entry_name.configure(border_color="red", border_width=2)
-                    self.entry_name.insert(0, "Error: Existing category")
-                    self.btn_category.configure(state="disabled")
-                    self.after(2000, lambda:self.entry_name.delete(0, "end"))
-                    self.after(2000, lambda:self.entry_name.configure(border_width=0))
-                    self.after(2000, lambda:self.btn_category.configure(state="normal"))
-                    break
-                else:
-                    repeated = False
-                    
-            if new_name == "":
-                self.entry_name.configure(border_color="red", border_width=2)
-                self.entry_name.insert(0, "Error: Enter a name")
+            if new_date == "":
+                self.calendar.date_entry.configure(border_color="red", border_width=2)
+                self.calendar.date_entry.insert(0, "Error: Enter a Date")
                 self.btn_category.configure(state="disabled")
-                self.after(2000, lambda:self.entry_name.delete(0, "end"))
-                self.after(2000, lambda:self.entry_name.configure(border_width=0))
+                self.after(2000, lambda:self.calendar.date_entry.delete(0, "end"))
+                self.after(2000, lambda:self.calendar.date_entry.configure(border_width=0))
                 self.after(2000, lambda:self.btn_category.configure(state="normal"))
-            elif repeated == True:
-                pass
+            elif new_concept == "":
+                self.txtbox_concept.configure(border_color="red", border_width=2)
+                self.txtbox_concept.insert("0.0", "Error: Enter a Concept")
+                self.btn_category.configure(state="disabled")
+                self.after(2000, lambda:self.txtbox_concept.delete("1.0", "end"))
+                self.after(2000, lambda:self.txtbox_concept.configure(border_width=0))
+                self.after(2000, lambda:self.btn_category.configure(state="normal"))
+            elif new_amount == "" or self.entry_amount.cget("border_color")=="red":
+                self.entry_amount.delete(0, "end")
+                self.entry_amount.configure(border_color="red", border_width=2)
+                self.entry_amount.insert(0, "Error: Enter a Amount")
+                self.btn_category.configure(state="disabled")
+                self.after(2000, lambda:self.entry_amount.delete(0, "end"))
+                self.after(2000, lambda:self.entry_amount.configure(border_width=0))
+                self.after(2000, lambda:self.btn_category.configure(state="normal"))
+            elif new_category not in self.categories_names:
+                self.cbbox_category.configure(border_color="red", border_width=2)
+                self.btn_category.configure(state="disabled")
+                self.after(2000, lambda:self.cbbox_category.configure(border_width=0))
+                self.after(2000, lambda:self.btn_category.configure(state="normal"))
             else:
-                self.dbc.insert_values(Category(new_name, new_category))
-                self.refresh(self.dbt.check_data(0))
-                self.information_labels(self.dbt.check_data(0))
+                self.dbt.insert_values(Transaction(new_date, new_concept, new_amount, new_category))
+                self.load_data()
+                self.refresh([tuple(value) for value in self.data.values.tolist()])
+                self.load_table_data()
+                self.calendar.date_entry.delete(0, "end")
+                self.txtbox_concept.delete("1.0", "end")
+                self.entry_amount.delete(0, "end")
+                self.calendar.date_entry.focus()
+                self.cbbox_category.set(self.categories_names[0])
         elif actual_state == "Edit":
-            if new_name == "":
-                self.entry_name.configure(border_color="red", border_width=2)
-                self.entry_name.insert(0, "Error: Enter a name")
+            if new_date == "":
+                self.calendar.date_entry.configure(border_color="red", border_width=2)
+                self.calendar.date_entry.insert(0, "Error: Enter a valid date")
                 self.btn_category.configure(state="disabled")
-                self.after(2000, lambda:self.entry_name.delete(0, "end"))
-                self.after(2000, lambda:self.entry_name.configure(border_width=0))
+                self.after(2000, lambda:self.calendar.date_entry.delete(0, "end"))
+                self.after(2000, lambda:self.calendar.date_entry.configure(border_width=0))
+                self.after(2000, lambda:self.btn_category.configure(state="normal"))
+            elif new_concept == "":
+                self.txtbox_concept.configure(border_color="red", border_width=2)
+                self.txtbox_concept.insert("0.0", "Error: Enter a Concept")
+                self.btn_category.configure(state="disabled")
+                self.after(2000, lambda:self.txtbox_concept.delete("1.0", "end"))
+                self.after(2000, lambda:self.txtbox_concept.configure(border_width=0))
+                self.after(2000, lambda:self.btn_category.configure(state="normal"))
+            elif new_amount == "" or self.entry_amount.cget("border_color")=="red":
+                self.entry_amount.delete(0, "end")
+                self.entry_amount.configure(border_color="red", border_width=2)
+                self.entry_amount.insert(0, "Error: Enter a Amount")
+                self.btn_category.configure(state="disabled")
+                self.after(2000, lambda:self.entry_amount.delete(0, "end"))
+                self.after(2000, lambda:self.entry_amount.configure(border_width=0))
+                self.after(2000, lambda:self.btn_category.configure(state="normal"))
+            elif new_category not in self.categories_names:
+                self.cbbox_category.configure(border_color="red", border_width=2)
+                self.btn_category.configure(state="disabled")
+                self.after(2000, lambda:self.cbbox_category.configure(border_width=0))
                 self.after(2000, lambda:self.btn_category.configure(state="normal"))
             else:
-                self.dbc.update_values(0, new_name, self.cat_id)
-                self.dbc.update_values(1, new_category, self.cat_id)
-                self.refresh(self.dbt.check_data(0))
-                self.information_labels(self.dbt.check_data(0))
+                self.dbt.update_values(0, new_date, self.cat_id)
+                self.dbt.update_values(1, new_concept, self.cat_id)
+                self.dbt.update_values(2, new_amount, self.cat_id)
+                self.dbt.update_values(3, new_category, self.cat_id)
+                self.load_data()
+                self.refresh([tuple(value) for value in self.data.values.tolist()])
+                self.load_table_data()
                 self.lbl_title.configure(text="Create")
-                self.entry_name.delete(0, "end")
-                self.entry_name.focus()
-                self.smb_category.set("Income")
+                self.calendar.date_entry.delete(0, "end")
+                self.txtbox_concept.delete("1.0", "end")
+                self.entry_amount.delete(0, "end")
+                self.calendar.date_entry.focus()
+                self.cbbox_category.set(self.categories_names[0])
         else:
-            if self.entry_name.get() in actual_data_transactions:
-                self.entry_name.configure(state="normal")
-                self.entry_name.delete(0, "end")
-                self.entry_name.configure(border_color="red", border_width=2)
-                self.entry_name.insert(0, "Error: Category in use")
-                self.btn_category.configure(state="disabled")
-                self.after(2000, lambda:self.entry_name.delete(0, "end"))
-                self.after(2000, lambda:self.entry_name.insert(0, new_name))
-                self.after(2000, lambda:self.entry_name.configure(border_width=0))
-                self.after(2000, lambda:self.btn_category.configure(state="normal"))
-                self.after(2000, lambda:self.entry_name.configure(state="disabled"))
+            self.calendar.date_entry.configure(state="normal")
+            self.txtbox_concept.configure(state="normal")
+            self.entry_amount.configure(state="normal")
+            self.cbbox_category.configure(state="normal")
+            self.dbt.delete_values(self.cat_id)
+            self.load_data()
+            self.refresh([tuple(value) for value in self.data.values.tolist()])
+            self.load_table_data()
+            self.lbl_title.configure(text="Create")
+            self.calendar.date_entry.delete(0, "end")
+            self.txtbox_concept.delete("1.0", "end")
+            self.entry_amount.delete(0, "end")
+            self.calendar.date_entry.focus()
+            self.cbbox_category.set(self.categories_names[0])
+            
+    def load_data(self):
+        self.transactions = self.dbt.check_data(0)
+        self.transactions = sorted(self.transactions, key=lambda x: datetime.strptime(x[1], '%Y-%m-%d'), reverse=True)
+        self.categories = self.dbc.check_data(0)
+        self.df = pd.DataFrame(self.transactions, columns=["Index", "Date", "Concept", "Amount", "Category_ID"])
+        self.df = self.df.sort_values(by="Date", ascending=False).reset_index(drop=True)
+        self.df["№"] = self.df.index + 1
+        self.df = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
+        self.data = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
+        self.data["Amount"] = ["{:.2f}".format(i) for i in self.data["Amount"].values.tolist()]
+        self.categories_names = [category[1] for category in self.categories]
+        analyzer = Analyzer([tuple(value) for value in self.df.values.tolist()], self.categories)
+        self.current_balance = analyzer.current_balance
+        
+        self.colors_cells = {}
+        for category in self.categories:
+            if category[2] == "Income":
+                self.colors_cells[category[1]] = ("#88B04B", "+")
             else:
-                self.entry_name.configure(state="normal")
-                self.smb_category.configure(state="normal")
-                self.dbc.delete_values(self.cat_id)
-                self.refresh(self.dbt.check_data(0))
-                self.information_labels(self.dbt.check_data(0))
-                self.lbl_title.configure(text="Create")
-                self.entry_name.delete(0, "end")
-                self.entry_name.focus()
-                self.smb_category.set("Income")
+                self.colors_cells[category[1]] = ("#BC6C25", "-")
+                
+    def load_table_data(self):
+        self.amount_column_data = self.table_transactions.get_column(3)
+        del self.amount_column_data[0]
+        self.data["Amount"] = self.amount_column_data
+        
+        self.amount_column_data = [float(amount.replace("$", "") ) for amount in self.amount_column_data]
+        
+        if self.current_balance >= 0:
+            self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64")
+        else:
+            self.lbl_curent_balance.configure(text=f"Current Balance: {self.current_balance:.2f}$", fg_color="orange")

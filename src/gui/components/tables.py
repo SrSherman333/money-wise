@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import pandas as pd
-from PIL import Image, ImageTk
+from PIL import Image
 from CTkTable import *
 from src.core.database import DataBaseCategories, DataBaseTransactions
 import sys, os
@@ -142,7 +142,6 @@ class TableCategories(CTkTable):
                 self.parent_ref.smb_category.set(values_act_row[2])
                 self.parent_ref.entry_name.focus()
                 
-                
 class TableTransactions(CTkTable):
     def __init__(self, master, total_data_transactions, parent_ref, **kwargs):
         self.dbt = DataBaseTransactions()
@@ -200,9 +199,17 @@ class TableTransactions(CTkTable):
             self.edit(row=i+1, column=2, hover=True, hover_color="#213435", 
                     command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "edit"))
             self.edit(row=i+1, column=3, fg_color=parent_ref.colors_cells[category][0], text=parent_ref.colors_cells[category][1]+f"{float(amount):.2f}"+"$")
+            
+            cell = self.frame[i, 2]
+            cell._text_label.configure(wraplength=399)
+            cell = self.frame[i, 3]
+            cell._text_label.configure(wraplength=94)
+            cell = self.frame[i, 4]
+            cell._text_label.configure(wraplength=114)
         
     def select_category(self, id_cat, act_row, option):
         self.parent_ref.cat_id = id_cat
+        values_act_row = self.get_row(act_row)
         
         if option == "edit":
             self.parent_ref.lbl_title.configure(text="Edit")
@@ -243,7 +250,6 @@ class TableTransactions(CTkTable):
                 self.edit_row(act_row, border_width=2, border_color="white")
                 self.state_mode = "edit"
                 self.row_clicked = act_row
-                values_act_row = self.get_row(act_row)
                 self.parent_ref.calendar.date_entry.configure(state="normal")
                 self.parent_ref.txtbox_concept.configure(state="normal")
                 self.parent_ref.entry_amount.configure(state="normal")
@@ -270,7 +276,6 @@ class TableTransactions(CTkTable):
                 self.edit_row(act_row, border_width=2, border_color="white")
                 self.state_mode = "edit"
                 self.row_clicked = act_row
-                values_act_row = self.get_row(act_row)
                 self.parent_ref.calendar.date_entry.configure(state="normal")
                 self.parent_ref.txtbox_concept.configure(state="normal")
                 self.parent_ref.entry_amount.configure(state="normal")
@@ -336,7 +341,6 @@ class TableTransactions(CTkTable):
                 self.edit_row(act_row, border_width=2, border_color="red")
                 self.state_mode = "delete"
                 self.row_clicked = act_row
-                values_act_row = self.get_row(act_row)
                 self.parent_ref.calendar.date_entry.delete(0, "end")
                 self.parent_ref.calendar.date_entry.insert(0, values_act_row[1])
                 self.parent_ref.calendar.date_entry.configure(state="disabled")
@@ -362,7 +366,6 @@ class TableTransactions(CTkTable):
                 self.edit_row(act_row, border_width=2, border_color="red")
                 self.state_mode = "delete"
                 self.row_clicked = act_row
-                values_act_row = self.get_row(act_row)
                 self.parent_ref.calendar.date_entry.delete(0, "end")
                 self.parent_ref.calendar.date_entry.insert(0, values_act_row[1])
                 self.parent_ref.calendar.date_entry.configure(state="disabled")

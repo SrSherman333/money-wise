@@ -9,8 +9,9 @@ from src.core.models import Transaction
 from src.core.analyzer import Analyzer
 
 class TransactionWindow(ctk.CTkFrame):
-    def __init__(self, master):
+    def __init__(self, master, parent_ref):
         super().__init__(master)
+        self.parent_ref = parent_ref
         self.dbc = DataBaseCategories()
         self.dbt = DataBaseTransactions()
         self.cat_id = None
@@ -33,6 +34,31 @@ class TransactionWindow(ctk.CTkFrame):
                                         scrollbar_button_color="#46685b", scrollbar_button_hover_color="#213435")
         self.frm_table.grid(row=0, column=0, sticky="nsew", padx=5, pady=(0,10))
         self.frm_table.columnconfigure(1, weight=1)
+        
+        canvas = self.frm_table._parent_canvas
+        
+        self.scroll_active = False
+        
+        def on_enter(event):
+            self.scroll_active = True
+            
+        def on_leave(event):
+            self.scroll_active = False
+            
+        self.frm_table.bind("<Enter>", on_enter)
+        self.frm_table.bind("<Leave>", on_leave)
+        
+        def on_mouse_wheel(event):
+            if self.scroll_active:
+                if event.num == 4 or (hasattr(event, "delta") and event.delta > 0):
+                    canvas.yview_scroll(-1, "units")
+                elif event.num == 5 or (hasattr(event, "delta") and event.delta < 0):
+                    canvas.yview_scroll(1, "units")
+                    
+        root = self.winfo_toplevel()
+        root.bind("<MouseWheel>", on_mouse_wheel)
+        root.bind("<Button-4>", on_mouse_wheel)
+        root.bind("<Button-5>", on_mouse_wheel)
         
         def options_column_filter(choice):
             dataframe = [tuple(value) for value in self.data.values.tolist()]
@@ -605,21 +631,25 @@ class TransactionWindow(ctk.CTkFrame):
         except ValueError:
             new_date = ""
         
-        if actual_state == "Create":
+        if actual_state == "Create" or actual_state == "Edit":
             if new_date == "":
+                self.calendar.date_entry.delete(0, "end")
                 self.calendar.date_entry.configure(border_color="red", border_width=2)
                 self.calendar.date_entry.insert(0, "Error: Enter a Date")
                 self.btn_category.configure(state="disabled")
                 self.after(2000, lambda:self.calendar.date_entry.delete(0, "end"))
                 self.after(2000, lambda:self.calendar.date_entry.configure(border_width=0))
                 self.after(2000, lambda:self.btn_category.configure(state="normal"))
+                return
             elif new_concept == "":
+                self.txtbox_concept.delete("1.0", "end")
                 self.txtbox_concept.configure(border_color="red", border_width=2)
                 self.txtbox_concept.insert("0.0", "Error: Enter a Concept")
                 self.btn_category.configure(state="disabled")
                 self.after(2000, lambda:self.txtbox_concept.delete("1.0", "end"))
                 self.after(2000, lambda:self.txtbox_concept.configure(border_width=0))
                 self.after(2000, lambda:self.btn_category.configure(state="normal"))
+                return
             elif new_amount == "" or self.entry_amount.cget("border_color")=="red":
                 self.entry_amount.delete(0, "end")
                 self.entry_amount.configure(border_color="red", border_width=2)
@@ -628,63 +658,40 @@ class TransactionWindow(ctk.CTkFrame):
                 self.after(2000, lambda:self.entry_amount.delete(0, "end"))
                 self.after(2000, lambda:self.entry_amount.configure(border_width=0))
                 self.after(2000, lambda:self.btn_category.configure(state="normal"))
+                return
             elif new_category not in self.categories_names:
                 self.cbbox_category.configure(border_color="red", border_width=2)
                 self.btn_category.configure(state="disabled")
                 self.after(2000, lambda:self.cbbox_category.configure(border_width=0))
                 self.after(2000, lambda:self.btn_category.configure(state="normal"))
-            else:
-                self.dbt.insert_values(Transaction(new_date, new_concept, new_amount, new_category))
-                self.load_data()
-                self.refresh([tuple(value) for value in self.data.values.tolist()])
-                self.load_table_data()
-                self.calendar.date_entry.delete(0, "end")
-                self.txtbox_concept.delete("1.0", "end")
-                self.entry_amount.delete(0, "end")
-                self.calendar.date_entry.focus()
-                self.cbbox_category.set(self.categories_names[0])
+                return
+        
+        if actual_state == "Create":
+            self.dbt.insert_values(Transaction(new_date, new_concept, new_amount, new_category))
+            self.load_data()
+            self.refresh([tuple(value) for value in self.data.values.tolist()])
+            self.parent_ref.frm_category.information_labels(self.categories)
+            self.load_table_data()
+            self.calendar.date_entry.delete(0, "end")
+            self.txtbox_concept.delete("1.0", "end")
+            self.entry_amount.delete(0, "end")
+            self.calendar.date_entry.focus()
+            self.cbbox_category.set(self.categories_names[0])
         elif actual_state == "Edit":
-            if new_date == "":
-                self.calendar.date_entry.configure(border_color="red", border_width=2)
-                self.calendar.date_entry.insert(0, "Error: Enter a valid date")
-                self.btn_category.configure(state="disabled")
-                self.after(2000, lambda:self.calendar.date_entry.delete(0, "end"))
-                self.after(2000, lambda:self.calendar.date_entry.configure(border_width=0))
-                self.after(2000, lambda:self.btn_category.configure(state="normal"))
-            elif new_concept == "":
-                self.txtbox_concept.configure(border_color="red", border_width=2)
-                self.txtbox_concept.insert("0.0", "Error: Enter a Concept")
-                self.btn_category.configure(state="disabled")
-                self.after(2000, lambda:self.txtbox_concept.delete("1.0", "end"))
-                self.after(2000, lambda:self.txtbox_concept.configure(border_width=0))
-                self.after(2000, lambda:self.btn_category.configure(state="normal"))
-            elif new_amount == "" or self.entry_amount.cget("border_color")=="red":
-                self.entry_amount.delete(0, "end")
-                self.entry_amount.configure(border_color="red", border_width=2)
-                self.entry_amount.insert(0, "Error: Enter a Amount")
-                self.btn_category.configure(state="disabled")
-                self.after(2000, lambda:self.entry_amount.delete(0, "end"))
-                self.after(2000, lambda:self.entry_amount.configure(border_width=0))
-                self.after(2000, lambda:self.btn_category.configure(state="normal"))
-            elif new_category not in self.categories_names:
-                self.cbbox_category.configure(border_color="red", border_width=2)
-                self.btn_category.configure(state="disabled")
-                self.after(2000, lambda:self.cbbox_category.configure(border_width=0))
-                self.after(2000, lambda:self.btn_category.configure(state="normal"))
-            else:
-                self.dbt.update_values(0, new_date, self.cat_id)
-                self.dbt.update_values(1, new_concept, self.cat_id)
-                self.dbt.update_values(2, new_amount, self.cat_id)
-                self.dbt.update_values(3, new_category, self.cat_id)
-                self.load_data()
-                self.refresh([tuple(value) for value in self.data.values.tolist()])
-                self.load_table_data()
-                self.lbl_title.configure(text="Create")
-                self.calendar.date_entry.delete(0, "end")
-                self.txtbox_concept.delete("1.0", "end")
-                self.entry_amount.delete(0, "end")
-                self.calendar.date_entry.focus()
-                self.cbbox_category.set(self.categories_names[0])
+            self.dbt.update_values(0, new_date, self.cat_id)
+            self.dbt.update_values(1, new_concept, self.cat_id)
+            self.dbt.update_values(2, new_amount, self.cat_id)
+            self.dbt.update_values(3, new_category, self.cat_id)
+            self.load_data()
+            self.refresh([tuple(value) for value in self.data.values.tolist()])
+            self.parent_ref.frm_category.information_labels(self.categories)
+            self.load_table_data()
+            self.lbl_title.configure(text="Create")
+            self.calendar.date_entry.delete(0, "end")
+            self.txtbox_concept.delete("1.0", "end")
+            self.entry_amount.delete(0, "end")
+            self.calendar.date_entry.focus()
+            self.cbbox_category.set(self.categories_names[0])
         else:
             self.calendar.date_entry.configure(state="normal")
             self.txtbox_concept.configure(state="normal")
@@ -693,6 +700,7 @@ class TransactionWindow(ctk.CTkFrame):
             self.dbt.delete_values(self.cat_id)
             self.load_data()
             self.refresh([tuple(value) for value in self.data.values.tolist()])
+            self.parent_ref.frm_category.information_labels(self.categories)
             self.load_table_data()
             self.lbl_title.configure(text="Create")
             self.calendar.date_entry.delete(0, "end")

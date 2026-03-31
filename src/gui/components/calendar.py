@@ -1,6 +1,6 @@
 import tkinter as tk
 import customtkinter as ctk
-from datetime import datetime
+from datetime import datetime, date
 import calendar
 
 class CTkDatePicker(ctk.CTkFrame):
@@ -135,6 +135,7 @@ class CTkDatePicker(ctk.CTkFrame):
             lbl.grid(row=1, column=i)
 
         # Days in month
+        today_day = date.today().day
         month_days = calendar.monthrange(self.current_year, self.current_month)[1]
         start_day = calendar.monthrange(self.current_year, self.current_month)[0]
         day = 1
@@ -147,10 +148,16 @@ class CTkDatePicker(ctk.CTkFrame):
                     lbl = ctk.CTkLabel(self.calendar_frame, text="")
                     lbl.grid(row=week, column=day_col)
                 else:
-                    if ctk.get_appearance_mode() == "Light":
-                        btn = ctk.CTkButton(self.calendar_frame, text=str(day), width=3, command=lambda day=day: self.select_date(day), fg_color="transparent", text_color="black", hover_color="#648a64")
+                    if today_day == day:
+                        if ctk.get_appearance_mode() == "Light":
+                            btn = ctk.CTkButton(self.calendar_frame, text=str(day), width=3, command=lambda day=day: self.select_date(day), fg_color="#648a64", text_color="black", hover_color="#648a64")
+                        else:
+                            btn = ctk.CTkButton(self.calendar_frame, text=str(day), width=3, command=lambda day=day: self.select_date(day), fg_color="#648a64", text_color="black", hover_color="#648a64")
                     else:
-                        btn = ctk.CTkButton(self.calendar_frame, text=str(day), width=3, command=lambda day=day: self.select_date(day), fg_color="transparent")
+                        if ctk.get_appearance_mode() == "Light":
+                            btn = ctk.CTkButton(self.calendar_frame, text=str(day), width=3, command=lambda day=day: self.select_date(day), fg_color="transparent", text_color="black", hover_color="#648a64")
+                        else:
+                            btn = ctk.CTkButton(self.calendar_frame, text=str(day), width=3, command=lambda day=day: self.select_date(day), fg_color="transparent", text_color="black", hover_color="#648a64")
                     btn.grid(row=week, column=day_col)
                     day += 1
 

@@ -1,6 +1,7 @@
 # MoneyWise
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)](https://github.com/SrSherman333/money-wise)
 [![GitHub commits](https://img.shields.io/github/commit-activity/t/SrSherman333/money-wise)](https://github.com/SrSherman333/money-wise/commits/main)
 
@@ -115,14 +116,14 @@ pip install -e .
 
 ## Upcoming Improvements
 
-- [] Add monthly budgets by category
-- [] Cloud synchronization (Firebase)
-- [] Excessive spending notifications
-- [] Support for multiple accounts/users
-- [] Create an executable .exe
-- [] Implement dark/light mode
-- [] Add calculation history
-- [] Internationalization (Spanish/English)
+- [ ] Add monthly budgets by category
+- [ ] Cloud synchronization (Firebase)
+- [ ] Excessive spending notifications
+- [ ] Support for multiple accounts/users
+- [ ] Create an executable .exe
+- [ ] Implement dark/light mode
+- [ ] Add calculation history
+- [ ] Internationalization (Spanish/English)
 
 ## Autor
 

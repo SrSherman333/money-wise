@@ -290,7 +290,7 @@ class TransactionWindow(ctk.CTkFrame):
             self.amount_control()
         
         self.cbbox_category = ctk.CTkComboBox(frm_edit_create_delete_transactions, font=ctk.CTkFont(size=13, weight="bold"),
-                                        button_color="#648a64", button_hover_color="#213435", values=self.categories_names,
+                                        button_color="#648a64", button_hover_color="#213435", values=self.parent_ref.frm_category.categories_names,
                                         command=option_cbbox_category)
         self.cbbox_category.place(relx=0.63, rely=0.7, anchor=tk.CENTER)
         
@@ -667,6 +667,9 @@ class TransactionWindow(ctk.CTkFrame):
                 return
         
         if actual_state == "Create":
+            self.column_filter.configure(state="normal")
+            self.entry_filter.configure(state="normal")
+            self.option_filter.configure(state="normal")
             self.dbt.insert_values(Transaction(new_date, new_concept, new_amount, new_category))
             self.load_data()
             self.refresh([tuple(value) for value in self.data.values.tolist()])
@@ -678,6 +681,9 @@ class TransactionWindow(ctk.CTkFrame):
             self.calendar.date_entry.focus()
             self.cbbox_category.set(self.categories_names[0])
         elif actual_state == "Edit":
+            self.column_filter.configure(state="normal")
+            self.entry_filter.configure(state="normal")
+            self.option_filter.configure(state="normal")
             self.dbt.update_values(0, new_date, self.cat_id)
             self.dbt.update_values(1, new_concept, self.cat_id)
             self.dbt.update_values(2, new_amount, self.cat_id)
@@ -693,6 +699,9 @@ class TransactionWindow(ctk.CTkFrame):
             self.calendar.date_entry.focus()
             self.cbbox_category.set(self.categories_names[0])
         else:
+            self.column_filter.configure(state="normal")
+            self.entry_filter.configure(state="normal")
+            self.option_filter.configure(state="normal")
             self.calendar.date_entry.configure(state="normal")
             self.txtbox_concept.configure(state="normal")
             self.entry_amount.configure(state="normal")
@@ -712,14 +721,14 @@ class TransactionWindow(ctk.CTkFrame):
     def load_data(self):
         self.transactions = self.dbt.check_data(0)
         self.transactions = sorted(self.transactions, key=lambda x: datetime.strptime(x[1], '%Y-%m-%d'), reverse=True)
-        self.categories = self.dbc.check_data(0)
+        self.categories = self.parent_ref.frm_category.categories
+        self.categories_names = self.parent_ref.frm_category.categories_names
         self.df = pd.DataFrame(self.transactions, columns=["Index", "Date", "Concept", "Amount", "Category_ID"])
-        self.df = self.df.sort_values(by="Date", ascending=False).reset_index(drop=True)
+        self.df = self.df.reset_index(drop=True)
         self.df["№"] = self.df.index + 1
         self.df = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
         self.data = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
         self.data["Amount"] = ["{:.2f}".format(i) for i in self.data["Amount"].values.tolist()]
-        self.categories_names = [category[1] for category in self.categories]
         analyzer = Analyzer([tuple(value) for value in self.df.values.tolist()], self.categories)
         self.current_balance = analyzer.current_balance
         

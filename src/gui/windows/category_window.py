@@ -1,39 +1,139 @@
 import customtkinter as ctk
 import tkinter as tk
+import pandas as pd
 from src.gui.components.tables import TableCategories
 from src.core.database import DataBaseCategories, DataBaseTransactions
 from src.core.models import Category
 
 class CategoryWindow(ctk.CTkFrame):
-    def __init__(self, master):
+    def __init__(self, master, parent_ref):
         super().__init__(master)
+        self.parent_ref = parent_ref
         self.dbc = DataBaseCategories()
         self.dbt = DataBaseTransactions()
         self.cat_id = None
         self.list_results_labels = []
         self.configure(fg_color = "#648a64")
+        
+        self.load_data()
+        
         self.create_widgets()
         
     def create_widgets(self):
         # ------------------------------
         # SECTION: TABLE
         # ------------------------------
-        self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
         
         self.frm_table = ctk.CTkScrollableFrame(self, fg_color="#a6b985", bg_color="#648a64", width=450,
                                         scrollbar_button_color="#46685b", scrollbar_button_hover_color="#213435")
         self.frm_table.grid(row=0, column=0, sticky="nsew", rowspan=2, padx=5)
         
-        lbl_title_table = ctk.CTkLabel(self.frm_table, text="Table of Categories", 
-                            fg_color="#46685b", text_color="#e1e3ac", corner_radius=20, 
-                            font=ctk.CTkFont(size=14, weight="bold"))
-        lbl_title_table.grid(row=0, column=0, pady=10)
+        canvas = self.frm_table._parent_canvas
         
-        total_data_categories = self.dbc.check_data(0)
-        self.table_categories = TableCategories(self.frm_table, total_data_categories, parent_ref=self)
-        self.table_categories.grid(row=1, column=0)
+        self.scroll_active = False
+        
+        def on_enter(event):
+            self.scroll_active = True
+            
+        def on_leave(event):
+            self.scroll_active = False
+            
+        self.frm_table.bind("<Enter>", on_enter)
+        self.frm_table.bind("<Leave>", on_leave)
+        
+        def on_mouse_wheel(event):
+            if self.scroll_active:
+                if event.num == 4 or (hasattr(event, "delta") and event.delta > 0):
+                    canvas.yview_scroll(-1, "units")
+                elif event.num == 5 or (hasattr(event, "delta") and event.delta < 0):
+                    canvas.yview_scroll(1, "units")
+                    
+        root = self.winfo_toplevel()
+        root.bind("<MouseWheel>", on_mouse_wheel)
+        root.bind("<Button-4>", on_mouse_wheel)
+        root.bind("<Button-5>", on_mouse_wheel)
+        
+        def options_column_filter(choice):
+            if choice == "Index":
+                self.option_filter.configure(state="normal")
+                self.entry_filter.configure(state="normal")
+                self.option_filter.configure(values=["==", ">", "<", ">=", "<="])
+                self.option_filter.set("==")
+                self.entry_filter.configure(placeholder_text="One option: 4 - Multiple options: 1, 2")
+                if self.entry_filter.get():
+                    self.entry_filter.delete(0, "end")
+                self.option_filter.focus_set()
+            elif choice == "Name":
+                self.entry_filter.configure(state="normal")
+                self.option_filter.configure(values=[""])
+                if self.entry_filter.get():
+                    self.entry_filter.delete(0, "end")
+                self.option_filter.set("")
+                self.option_filter.configure(state="disabled")
+                self.entry_filter.configure(placeholder_text="Enter the category name")
+            else:
+                self.entry_filter.configure(state="normal")
+                self.option_filter.configure(values=[""])
+                if self.entry_filter.get():
+                    self.entry_filter.delete(0, "end")
+                self.option_filter.set("")
+                self.option_filter.configure(state="disabled")
+                self.entry_filter.configure(placeholder_text="Enter the category type")
+        
+        column_filter_values = ["Index", "Name", "Category"]
+        self.column_filter = ctk.CTkComboBox(self.frm_table, font=ctk.CTkFont(size=13, weight="bold"),
+                                        button_color="#648a64", button_hover_color="#213435",
+                                        values=column_filter_values, width=50, command=options_column_filter)
+        self.column_filter.grid(row=0, column=0, pady=10, sticky="snew")
+        
+        self.entry_filter = ctk.CTkEntry(self.frm_table, font=ctk.CTkFont(size=13, weight="bold"),
+                                placeholder_text="One option: 4 - Multiple options: 1, 2", width=206)
+        self.entry_filter.grid(row=0, column=1, pady=10, sticky="snew")
+        self.entry_filter.bind("<KeyRelease>", self.execute_filter)
+        
+        def options_filter(choice):
+            dataframe = [tuple(value) for value in self.df.values.tolist()]
+            if choice == "==":
+                self.refresh(dataframe)
+                self.entry_filter.configure(placeholder_text="One option: 4 - Multiple options: 1, 2")
+                if self.entry_filter.get():
+                    self.entry_filter.delete(0, "end")
+                self.option_filter.focus_set()
+            elif choice == ">":
+                self.refresh(dataframe)
+                self.entry_filter.configure(placeholder_text="Values higher than the index")
+                if self.entry_filter.get():
+                    self.entry_filter.delete(0, "end")
+                self.option_filter.focus_set()
+            elif choice == "<":
+                self.refresh(dataframe)
+                self.entry_filter.configure(placeholder_text="Values lower than the index")
+                if self.entry_filter.get():
+                    self.entry_filter.delete(0, "end")
+                self.option_filter.focus_set()
+            elif choice == ">=":
+                self.refresh(dataframe)
+                self.entry_filter.configure(placeholder_text="Values greater than or equal")
+                if self.entry_filter.get():
+                    self.entry_filter.delete(0, "end")
+                self.option_filter.focus_set()
+            elif choice == "<=":
+                self.refresh(dataframe)
+                self.entry_filter.configure(placeholder_text="Values less than or equal")
+                if self.entry_filter.get():
+                    self.entry_filter.delete(0, "end")
+                self.option_filter.focus_set()
+        
+        self.option_filter = ctk.CTkComboBox(self.frm_table, font=ctk.CTkFont(size=13, weight="bold"),
+                                        button_color="#648a64", button_hover_color="#213435",
+                                        values=["==", ">", "<", ">=", "<="], width=40, command=options_filter)
+        self.option_filter.grid(row=0, column=2, pady=10, sticky="snew")
+        
+        self.table_categories = TableCategories(self.frm_table, [tuple(value) for value in self.df.values.tolist()], parent_ref=self)
+        self.table_categories.grid(row=1, column=0, columnspan=3)
             
         # ------------------------------
         # SECTION: SURVEY
@@ -101,14 +201,114 @@ class CategoryWindow(ctk.CTkFrame):
             results_labels.grid(row=i+1, column=1, padx=5, pady=5)
             self.list_results_labels.append(results_labels)
             
-        self.information_labels(total_data_categories)
+        self.information_labels(self.categories)
         
-    def refresh(self):
+    def execute_filter(self, event):
+        actual_value = self.entry_filter.get()
+        option_filter_value = self.option_filter.get()
+        column_filter_value = self.column_filter.get()
+        dataframe = [tuple(value) for value in self.df.values.tolist()]
+        
+        if option_filter_value == "==":
+            if "," not in actual_value and actual_value.strip().isdigit():
+                self.entry_filter.configure(border_width=0)
+                index = int(actual_value.strip())-1
+                try:
+                    df_filtered = self.df.loc[index]
+                    values = tuple([value for value in df_filtered.values.tolist()])
+                    values = [(int(values[0]), values[1], values[2])]
+                    self.refresh(values)
+                except Exception:
+                    self.entry_filter.configure(border_width=2, border_color="red")
+            elif "," in actual_value:
+                self.entry_filter.configure(border_width=0)
+                indexes = [int(index.strip())-1 for index in actual_value.split(",") if index.strip().isdigit()]
+                try:
+                    df_filtered = self.df.iloc[indexes].drop_duplicates()
+                    table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                    self.refresh(table_data)
+                except Exception:
+                    self.entry_filter.configure(border_width=2, border_color="red")
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe)
+            else:
+                self.entry_filter.configure(border_width=2, border_color="red")
+        elif option_filter_value == ">":
+            if actual_value and actual_value.strip().isdigit():
+                self.entry_filter.configure(border_width=0)
+                df_filtered = self.df[self.df.index > int(actual_value)-1]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                self.refresh(table_data)
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe)
+            else:
+                self.entry_filter.configure(border_width=2, border_color="red")
+        elif option_filter_value == "<":
+            if actual_value and actual_value.strip().isdigit():
+                self.entry_filter.configure(border_width=0)
+                df_filtered = self.df[self.df.index < int(actual_value)-1]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                self.refresh(table_data)
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe)
+            else:
+                self.entry_filter.configure(border_width=2, border_color="red")
+        elif option_filter_value == ">=":
+            if actual_value and actual_value.strip().isdigit():
+                self.entry_filter.configure(border_width=0)
+                df_filtered = self.df[self.df.index >= int(actual_value)-1]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                self.refresh(table_data)
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe)
+            else:
+                self.entry_filter.configure(border_width=2, border_color="red")
+        elif option_filter_value == "<=":
+            if actual_value and actual_value.strip().isdigit():
+                self.entry_filter.configure(border_width=0)
+                df_filtered = self.df[self.df.index <= int(actual_value)-1]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                self.refresh(table_data)
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe)
+            else:
+                self.entry_filter.configure(border_width=2, border_color="red")
+        
+        if column_filter_value == "Name":
+            if actual_value:
+                df_filtered = self.df[self.df["Name"].str.contains(actual_value, case=False)]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                self.refresh(table_data)
+            else:
+                self.refresh(dataframe)
+        
+        if column_filter_value == "Category":
+            if actual_value == "Expense":
+                self.entry_filter.configure(border_width=0)
+                df_filtered = self.df[self.df["Category"] == "Expense"]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                self.refresh(table_data)
+            elif actual_value == "Income":
+                self.entry_filter.configure(border_width=0)
+                df_filtered = self.df[self.df["Category"] == "Income"]
+                table_data = [tuple(value) for value in df_filtered.values.tolist()]
+                self.refresh(table_data)
+            elif actual_value == "":
+                self.entry_filter.configure(border_width=0)
+                self.refresh(dataframe)
+            else:
+                self.entry_filter.configure(border_width=2, border_color="red")
+        
+    def refresh(self, table_data):
         if self.table_categories:
             self.table_categories.destroy()
-            total_data_categories = self.dbc.check_data(0)
-            self.table_categories = TableCategories(self.frm_table, total_data_categories, parent_ref=self)
-            self.table_categories.grid(row=1, column=0)
+            self.table_categories = TableCategories(self.frm_table, table_data, parent_ref=self)
+            self.table_categories.grid(row=1, column=0, columnspan=3)
         
     def information_labels(self, total_data_categories):
         total_transactions = self.dbt.check_data(0)
@@ -154,15 +354,14 @@ class CategoryWindow(ctk.CTkFrame):
         
     def create_edit_delete_category(self):
         actual_state = self.lbl_title.cget("text")
-        actual_data_categories = self.dbc.check_data(0)
-        actual_data_transactions = [value[4] for value in self.dbt.check_data(0)]
+        actual_data_categories = self.categories
+        actual_data_transactions = [value[4] for value in self.parent_ref.frm_transaction.transactions]
         new_name = self.entry_name.get()
         new_category = self.smb_category.get()
-        
+
         if actual_state == "Create":
             for name in actual_data_categories:
                 if new_name.strip().lower() == name[1].strip().lower():
-                    repeated = True
                     self.entry_name.delete(0, "end")
                     self.entry_name.configure(border_color="red", border_width=2)
                     self.entry_name.insert(0, "Error: Existing category")
@@ -170,10 +369,7 @@ class CategoryWindow(ctk.CTkFrame):
                     self.after(2000, lambda:self.entry_name.delete(0, "end"))
                     self.after(2000, lambda:self.entry_name.configure(border_width=0))
                     self.after(2000, lambda:self.btn_category.configure(state="normal"))
-                    break
-                else:
-                    repeated = False
-                    
+                    return
             if new_name == "":
                 self.entry_name.configure(border_color="red", border_width=2)
                 self.entry_name.insert(0, "Error: Enter a name")
@@ -181,29 +377,34 @@ class CategoryWindow(ctk.CTkFrame):
                 self.after(2000, lambda:self.entry_name.delete(0, "end"))
                 self.after(2000, lambda:self.entry_name.configure(border_width=0))
                 self.after(2000, lambda:self.btn_category.configure(state="normal"))
-            elif repeated == True:
-                pass
-            else:
-                self.dbc.insert_values(Category(new_name, new_category))
-                self.refresh()
-                self.information_labels(self.dbc.check_data(0))
+                return
+            
+        if actual_state == "Create":
+            self.column_filter.configure(state="normal")
+            self.entry_filter.configure(state="normal")
+            self.option_filter.configure(state="normal")
+            self.dbc.insert_values(Category(new_name, new_category))
+            self.load_data()
+            self.parent_ref.frm_transaction.cbbox_category.configure(values=self.categories_names)
+            self.refresh([tuple(value) for value in self.df.values.tolist()])
+            self.information_labels(self.categories)
+            self.entry_name.delete(0, "end")
+            self.entry_name.focus()
+            self.smb_category.set("Income")
         elif actual_state == "Edit":
-            if new_name == "":
-                self.entry_name.configure(border_color="red", border_width=2)
-                self.entry_name.insert(0, "Error: Enter a name")
-                self.btn_category.configure(state="disabled")
-                self.after(2000, lambda:self.entry_name.delete(0, "end"))
-                self.after(2000, lambda:self.entry_name.configure(border_width=0))
-                self.after(2000, lambda:self.btn_category.configure(state="normal"))
-            else:
-                self.dbc.update_values(0, new_name, self.cat_id)
-                self.dbc.update_values(1, new_category, self.cat_id)
-                self.refresh()
-                self.information_labels(self.dbc.check_data(0))
-                self.lbl_title.configure(text="Create")
-                self.entry_name.delete(0, "end")
-                self.entry_name.focus()
-                self.smb_category.set("Income")
+            self.column_filter.configure(state="normal")
+            self.entry_filter.configure(state="normal")
+            self.option_filter.configure(state="normal")
+            self.dbc.update_values(0, new_name, self.cat_id)
+            self.dbc.update_values(1, new_category, self.cat_id)
+            self.load_data()
+            self.parent_ref.frm_transaction.cbbox_category.configure(values=self.categories_names)
+            self.refresh([tuple(value) for value in self.df.values.tolist()])
+            self.information_labels(self.categories)
+            self.lbl_title.configure(text="Create")
+            self.entry_name.delete(0, "end")
+            self.entry_name.focus()
+            self.smb_category.set("Income")
         else:
             if self.entry_name.get() in actual_data_transactions:
                 self.entry_name.configure(state="normal")
@@ -217,12 +418,25 @@ class CategoryWindow(ctk.CTkFrame):
                 self.after(2000, lambda:self.btn_category.configure(state="normal"))
                 self.after(2000, lambda:self.entry_name.configure(state="disabled"))
             else:
+                self.column_filter.configure(state="normal")
+                self.entry_filter.configure(state="normal")
+                self.option_filter.configure(state="normal")
                 self.entry_name.configure(state="normal")
                 self.smb_category.configure(state="normal")
                 self.dbc.delete_values(self.cat_id)
-                self.refresh()
-                self.information_labels(self.dbc.check_data(0))
+                self.load_data()
+                self.parent_ref.frm_transaction.cbbox_category.configure(values=self.categories_names)
+                self.refresh([tuple(value) for value in self.df.values.tolist()])
+                self.information_labels(self.categories)
                 self.lbl_title.configure(text="Create")
                 self.entry_name.delete(0, "end")
                 self.entry_name.focus()
                 self.smb_category.set("Income")
+                
+    def load_data(self):
+        self.categories = self.dbc.check_data(0)
+        self.df = pd.DataFrame(self.categories, columns=["Index", "Name", "Category"])
+        self.df = self.df.reset_index(drop=True)
+        self.df["№"] = self.df.index + 1
+        self.df = self.df[["№", "Name", "Category"]]
+        self.categories_names = [category[1] for category in self.categories]

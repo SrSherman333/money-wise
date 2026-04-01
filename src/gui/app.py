@@ -98,7 +98,7 @@ class App(ctk.CTk):
                             text_color="#46685b")
         lbl_subtitle.grid(column=0, row=0, columnspan=2, pady=12)
 
-        self.frm_category = CategoryWindow(tabview.tab("Categories"))
+        self.frm_category = CategoryWindow(tabview.tab("Categories"), self)
         self.frm_category.grid(column=0, row=1, sticky="nsew", pady=10)
         
         # ------------------------------
@@ -109,8 +109,8 @@ class App(ctk.CTk):
                                     text_color="#46685b")
         lbl_subtitle.grid(column=0, row=0, pady=12)
 
-        frm_transaction = TransactionWindow(tabview.tab("Transactions"), self)
-        frm_transaction.grid(column=0, row=1, sticky="nsew", pady=10)
+        self.frm_transaction = TransactionWindow(tabview.tab("Transactions"), self)
+        self.frm_transaction.grid(column=0, row=1, sticky="nsew", pady=10)
 
         btn_back = ctk.CTkButton(self.pages["app_page"], text="Back", font=ctk.CTkFont(size=20, weight="bold"),
                                 text_color="#46685b", bg_color="#46685b", fg_color="#a6b985",

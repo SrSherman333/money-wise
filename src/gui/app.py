@@ -2,6 +2,7 @@ import customtkinter as ctk
 import tkinter as tk
 from src.gui.windows.category_window import CategoryWindow
 from src.gui.windows.transaction_window import TransactionWindow
+from src.gui.windows.dashboard_window import DashboardWindow
 from PIL import Image, ImageTk
 from CTkTable import *
 import sys, os
@@ -112,6 +113,14 @@ class App(ctk.CTk):
         self.frm_transaction = TransactionWindow(tabview.tab("Transactions"), self)
         self.frm_transaction.grid(column=0, row=1, sticky="nsew", pady=10)
 
+        # ------------------------------
+        # DASHBOARD TAB
+        # ------------------------------
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+        self.frm_dashboard = DashboardWindow(tabview.tab("Dashboard"), self)
+        self.frm_dashboard.grid(column=0, row=1, sticky="nsew", pady=10)
+        
         btn_back = ctk.CTkButton(self.pages["app_page"], text="Back", font=ctk.CTkFont(size=20, weight="bold"),
                                 text_color="#46685b", bg_color="#46685b", fg_color="#a6b985",
                                 hover_color="#213435", command=lambda:self.show_page("initial_page"))

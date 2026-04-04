@@ -16,6 +16,8 @@ class TransactionWindow(ctk.CTkFrame):
         self.dbt = DataBaseTransactions()
         self.cat_id = None
         self.list_results_labels = []
+        self.colors_cells = self.parent_ref.frm_category.colors_cells
+        self.empty_table = self.parent_ref.empty_table
         self.configure(fg_color = "#648a64")
         
         self.load_data()
@@ -289,20 +291,28 @@ class TransactionWindow(ctk.CTkFrame):
             self.cbbox_category.configure(border_width=2, border_color=self.colors_cells[choice][0])
             self.amount_control()
         
+        if not self.empty_table:
+            values = self.parent_ref.frm_category.categories_names
+        else:
+            values = ["Nothing"]
+        
         self.cbbox_category = ctk.CTkComboBox(frm_edit_create_delete_transactions, font=ctk.CTkFont(size=13, weight="bold"),
-                                        button_color="#648a64", button_hover_color="#213435", values=self.parent_ref.frm_category.categories_names,
+                                        button_color="#648a64", button_hover_color="#213435", values=values,
                                         command=option_cbbox_category)
         self.cbbox_category.place(relx=0.63, rely=0.7, anchor=tk.CENTER)
         
-        self.entry_amount.configure(border_width=2, border_color=self.colors_cells[self.cbbox_category.get()][0])
-        self.cbbox_category.configure(border_width=2, border_color=self.colors_cells[self.cbbox_category.get()][0])
+        border = self.colors_cells[self.cbbox_category.get()][0] if not self.empty_table else "gray"
+        
+        self.entry_amount.configure(border_width=2, border_color=border)
+        self.cbbox_category.configure(border_width=2, border_color=border)
         
         self.lbl_curent_balance = ctk.CTkLabel(frm_edit_create_delete_transactions, text=f"Current Balance: {self.current_balance:.2f}$", fg_color="#648a64", 
                                 text_color="#e1e3ac", corner_radius=20, font=ctk.CTkFont(size=13, weight="bold"),
                                 width=200, wraplength=200)
         self.lbl_curent_balance.place(relx=0.87, rely=0.4, anchor=tk.CENTER)
         
-        self.load_table_data()
+        if not self.parent_ref.empty_table:
+            self.load_table_data()
         
         self.btn_category = ctk.CTkButton(frm_edit_create_delete_transactions, text="Confirm", 
                                     font=ctk.CTkFont(size=13, weight="bold"), text_color="#46685b", 
@@ -719,25 +729,22 @@ class TransactionWindow(ctk.CTkFrame):
             self.cbbox_category.set(self.categories_names[0])
             
     def load_data(self):
-        self.transactions = self.dbt.check_data(0)
-        self.transactions = sorted(self.transactions, key=lambda x: datetime.strptime(x[1], '%Y-%m-%d'), reverse=True)
-        self.categories = self.parent_ref.frm_category.categories
-        self.categories_names = self.parent_ref.frm_category.categories_names
-        self.df = pd.DataFrame(self.transactions, columns=["Index", "Date", "Concept", "Amount", "Category_ID"])
-        self.df = self.df.reset_index(drop=True)
-        self.df["№"] = self.df.index + 1
-        self.df = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
-        self.data = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
-        self.data["Amount"] = ["{:.2f}".format(i) for i in self.data["Amount"].values.tolist()]
-        analyzer = Analyzer([tuple(value) for value in self.df.values.tolist()], self.categories)
-        self.current_balance = analyzer.current_balance
-        
-        self.colors_cells = {}
-        for category in self.categories:
-            if category[2] == "Income":
-                self.colors_cells[category[1]] = ("#88B04B", "+")
-            else:
-                self.colors_cells[category[1]] = ("#BC6C25", "-")
+        if not self.empty_table:
+            self.transactions = self.parent_ref.frm_category.transactions
+            self.transactions = sorted(self.transactions, key=lambda x: datetime.strptime(x[1], '%Y-%m-%d'), reverse=True)
+            self.categories = self.parent_ref.frm_category.categories
+            self.categories_names = self.parent_ref.frm_category.categories_names
+            self.df = pd.DataFrame(self.transactions, columns=["Index", "Date", "Concept", "Amount", "Category_ID"])
+            self.df = self.df.reset_index(drop=True)
+            self.df["№"] = self.df.index + 1
+            self.df = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
+            self.data = self.df[["№", "Date", "Concept", "Amount", "Category_ID"]]
+            self.data["Amount"] = ["{:.2f}".format(i) for i in self.data["Amount"].values.tolist()]
+            analyzer = Analyzer([tuple(value) for value in self.df.values.tolist()], self.categories)
+            self.current_balance = analyzer.current_balance
+        else:
+            self.data = pd.DataFrame(["No data"], columns=["Nothing"])
+            self.current_balance = 0
                 
     def load_table_data(self):
         self.amount_column_data = self.table_transactions.get_column(3)

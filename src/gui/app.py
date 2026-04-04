@@ -22,6 +22,7 @@ class App(ctk.CTk):
         self.title("Money Wise")
         self.configure(fg_color = "#213435")
         self.resizable(False, False)
+        self.empty_table = None
         
         self.pages = {}
         self.page_name_list = [

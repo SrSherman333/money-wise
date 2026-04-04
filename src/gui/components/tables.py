@@ -20,46 +20,61 @@ class TableCategories(CTkTable):
         self.state_mode = None
         self.parent_ref = parent_ref
         self.parent = master
-        data = total_data_categories
-        values = [("№", "Name", "Category", "Action")]
         
-        for row in data:
-            values.append(row + ("",))
+        if not self.parent_ref.empty_table:
+            data = total_data_categories
+            values = [("№", "Name", "Category", "Action")]
             
-        weights = [40, 200, 120, 50]
-        super().__init__(master, values=values, **kwargs)
+            for row in data:
+                values.append(row + ("",))
+                
+            weights = [40, 200, 120, 50]
+            
+            super().__init__(master, values=values, **kwargs)
         
-        for i, weight in enumerate(weights):
-            self.edit_column(i, width=weight)
+            for i, weight in enumerate(weights):
+                self.edit_column(i, width=weight)
+                
+            self.configure(bg_color="#a6b985", text_color="#e1e3ac", header_color="#213435", 
+                        colors=["#46685b", "#648a64"])
             
-        self.configure(bg_color="#a6b985", text_color="#e1e3ac", header_color="#213435", 
-                    colors=["#46685b", "#648a64"])
-        
-        for col in range(4):
-            value = self.get(0, col)
-            self.insert(row=0, column=col, value=value, corner_radius=15, font=ctk.CTkFont(size=13, weight="bold"))
+            for col in range(4):
+                value = self.get(0, col)
+                self.insert(row=0, column=col, value=value, corner_radius=15, font=ctk.CTkFont(size=13, weight="bold"))
+                
+            try:
+                trash_icon_original = Image.open(resource_path("docs/images/trash_icon.png"))
+                trash_icon_photo = ctk.CTkImage(light_image=trash_icon_original, size=(16, 16))
+            except Exception as e:
+                print(e)
+                trash_icon_photo = None
             
-        try:
-            trash_icon_original = Image.open(resource_path("docs/images/trash_icon.png"))
-            trash_icon_photo = ctk.CTkImage(light_image=trash_icon_original, size=(16, 16))
-        except Exception as e:
-            print(e)
-            trash_icon_photo = None
-        
-        for i, row in enumerate(data):
-            category_id = self.parent_ref.categories[i][0]
-            actual_row = i+1
-            
-            self.insert(
-                row=i+1, column=3, value="", image=trash_icon_photo,
-                command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "delete")
-            )
-            self.edit(row=i+1, column=3, hover=True, hover_color="red")
-            self.edit(row=i+1, column=1, hover=True, hover_color="#213435", 
-                    command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "edit"))
-            
-            cell = self.frame[i, 1]
-            cell._text_label.configure(wraplength=194)
+            for i, row in enumerate(data):
+                category_id = self.parent_ref.categories[i][0]
+                actual_row = i+1
+                
+                self.insert(
+                    row=i+1, column=3, value="", image=trash_icon_photo,
+                    command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "delete")
+                )
+                self.edit(row=i+1, column=3, hover=True, hover_color="red")
+                self.edit(row=i+1, column=1, hover=True, hover_color="#213435", 
+                        command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "edit"))
+                
+                cell = self.frame[i, 1]
+                cell._text_label.configure(wraplength=194)
+        else:
+            values = [("№", "Name", "Category", "Action"),
+                    ("No", "categories, create one", "to", "start")]
+            super().__init__(master, values=values, **kwargs)
+            weights = [40, 200, 120, 50]
+
+            for i, weight in enumerate(weights):
+                self.edit_column(i, width=weight)
+            self.configure(bg_color="#a6b985", text_color="#e1e3ac", header_color="#213435", colors=["#46685b", "#648a64"])
+            for col in range(4):
+                value = self.get(0, col)
+                self.insert(row=0, column=col, value=value, corner_radius=15, font=ctk.CTkFont(size=13, weight="bold"))
         
     def select_category(self, id_cat, act_row, option):
         self.parent_ref.cat_id = id_cat
@@ -171,63 +186,81 @@ class TableTransactions(CTkTable):
         self.state_mode = None
         self.parent_ref = parent_ref
         self.parent = master
-        data = total_data_transactions
-        values = [("№", "Date", "Concept", "Amount", "Category", "Action")]
         
-        for row in data:
-            values.append(row + ("",))
+        if not self.parent_ref.empty_table:
+            data = total_data_transactions
+            values = [("№", "Date", "Concept", "Amount", "Category", "Action")]
             
-        weights = [40, 100, 405, 100, 120, 50]
-        super().__init__(master, values=values, **kwargs)
+            for row in data:
+                values.append(row + ("",))
+                
+            weights = [40, 100, 405, 100, 120, 50]
+            
+            super().__init__(master, values=values, **kwargs)
         
-        for i, weight in enumerate(weights):
-            self.edit_column(i, width=weight)
+            for i, weight in enumerate(weights):
+                self.edit_column(i, width=weight)
+                
+            self.configure(bg_color="#a6b985", text_color="#e1e3ac", header_color="#213435", 
+                        colors=["#46685b", "#648a64"])
             
-        self.configure(bg_color="#a6b985", text_color="#e1e3ac", header_color="#213435", 
-                    colors=["#46685b", "#648a64"])
-        
-        for col in range(6):
-            value = self.get(0, col)
-            self.insert(row=0, column=col, value=value, corner_radius=15, font=ctk.CTkFont(size=13, weight="bold"))
+            for col in range(6):
+                value = self.get(0, col)
+                self.insert(row=0, column=col, value=value, corner_radius=15, font=ctk.CTkFont(size=13, weight="bold"))
+                
+            try:
+                trash_icon_original = Image.open(resource_path("docs/images/trash_icon.png"))
+                trash_icon_photo = ctk.CTkImage(light_image=trash_icon_original, size=(16, 16))
+            except Exception as e:
+                print(e)
+                trash_icon_photo = None
             
-        try:
-            trash_icon_original = Image.open(resource_path("docs/images/trash_icon.png"))
-            trash_icon_photo = ctk.CTkImage(light_image=trash_icon_original, size=(16, 16))
-        except Exception as e:
-            print(e)
-            trash_icon_photo = None
-        
-        for i, row in enumerate(data):
-            category_id = self.parent_ref.transactions[i][0]
-            actual_row = i+1
-            category = self.get(i+1, column=4)
-            
-            amount = str(self.get(i+1, column=3))
+            for i, row in enumerate(data):
+                category_id = self.parent_ref.transactions[i][0]
+                actual_row = i+1
+                category = self.get(i+1, column=4)
+                
+                amount = str(self.get(i+1, column=3))
 
-            if "-" in amount:
-                amount = amount.replace("-", "")
-                amount = amount.replace("$", "")
-            elif "+" in amount:
-                amount = amount.replace("+", "")
-                amount = amount.replace("$", "")
-            else:
-                pass
+                if "-" in amount:
+                    amount = amount.replace("-", "")
+                    amount = amount.replace("$", "")
+                elif "+" in amount:
+                    amount = amount.replace("+", "")
+                    amount = amount.replace("$", "")
+                else:
+                    pass
+                
+                self.insert(
+                    row=i+1, column=5, value="", image=trash_icon_photo,
+                    command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "delete")
+                )
+                self.edit(row=i+1, column=5, hover=True, hover_color="red")
+                self.edit(row=i+1, column=2, hover=True, hover_color="#213435", 
+                        command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "edit"))
+                self.edit(row=i+1, column=3, fg_color=parent_ref.colors_cells[category][0], text=parent_ref.colors_cells[category][1]+f"{float(amount):.2f}"+"$")
+                
+                cell = self.frame[i, 2]
+                cell._text_label.configure(wraplength=399)
+                cell = self.frame[i, 3]
+                cell._text_label.configure(wraplength=94)
+                cell = self.frame[i, 4]
+                cell._text_label.configure(wraplength=114)
+        else:
+            values = [["There are no existing categories, create one to get started"]]
+            super().__init__(master, values=values, **kwargs)
             
-            self.insert(
-                row=i+1, column=5, value="", image=trash_icon_photo,
-                command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "delete")
-            )
-            self.edit(row=i+1, column=5, hover=True, hover_color="red")
-            self.edit(row=i+1, column=2, hover=True, hover_color="#213435", 
-                    command=lambda id_cat = category_id, act_row = actual_row: self.select_category(id_cat, act_row, "edit"))
-            self.edit(row=i+1, column=3, fg_color=parent_ref.colors_cells[category][0], text=parent_ref.colors_cells[category][1]+f"{float(amount):.2f}"+"$")
-            
-            cell = self.frame[i, 2]
-            cell._text_label.configure(wraplength=399)
-            cell = self.frame[i, 3]
-            cell._text_label.configure(wraplength=94)
-            cell = self.frame[i, 4]
-            cell._text_label.configure(wraplength=114)
+            values = [("№", "Date", "Concept", "Amount", "Category", "Action"),
+                    ("There", "are no", "categories, create one in order", "to create", "a", "transaction")]
+            super().__init__(master, values=values, **kwargs)
+            weights = [40, 100, 405, 100, 120, 50]
+
+            for i, weight in enumerate(weights):
+                self.edit_column(i, width=weight)
+            self.configure(bg_color="#a6b985", text_color="#e1e3ac", header_color="#213435", colors=["#46685b", "#648a64"])
+            for col in range(6):
+                value = self.get(0, col)
+                self.insert(row=0, column=col, value=value, corner_radius=15, font=ctk.CTkFont(size=13, weight="bold"))
         
     def select_category(self, id_cat, act_row, option):
         self.parent_ref.cat_id = id_cat

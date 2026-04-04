@@ -12,6 +12,7 @@ class CategoryWindow(ctk.CTkFrame):
         self.dbc = DataBaseCategories()
         self.dbt = DataBaseTransactions()
         self.cat_id = None
+        self.colors_cells = {"Nothing":("gray", "#")}
         self.list_results_labels = []
         self.configure(fg_color = "#648a64")
         
@@ -201,7 +202,8 @@ class CategoryWindow(ctk.CTkFrame):
             results_labels.grid(row=i+1, column=1, padx=5, pady=5)
             self.list_results_labels.append(results_labels)
             
-        self.information_labels(self.categories)
+        if not self.parent_ref.empty_table:
+            self.information_labels()
         
     def execute_filter(self, event):
         actual_value = self.entry_filter.get()
@@ -310,14 +312,22 @@ class CategoryWindow(ctk.CTkFrame):
             self.table_categories = TableCategories(self.frm_table, table_data, parent_ref=self)
             self.table_categories.grid(row=1, column=0, columnspan=3)
         
-    def information_labels(self, total_data_categories):
-        total_transactions = self.dbt.check_data(0)
-        total_categories = len(total_data_categories)
+    def information_labels(self):
+        total_data_categories = self.categories
+        total_transactions = self.transactions
+        total_categories = len(self.categories)
         most_used_category = []
         predominant_type = []
         
-        list_categories = {i[4] : 0 for i in total_transactions}
-        list_types = {i[2] : 0 for i in total_data_categories}
+        if len(total_transactions) > 0:
+            list_categories = {i[4] : 0 for i in total_transactions}
+        else:
+            list_categories = {"?":0}
+            
+        if total_categories > 0:
+            list_types = {i[2] : 0 for i in total_data_categories}
+        else:
+            list_types = {"?":0}
         
         for i in total_data_categories:
             list_types[i[2]] += 1
@@ -336,7 +346,10 @@ class CategoryWindow(ctk.CTkFrame):
             if value == max_value_predominant_type:
                 predominant_type.append(key)
                 
-        self.list_results_labels[0].configure(text=total_categories)
+        if total_categories > 0:
+            self.list_results_labels[0].configure(text=total_categories)
+        else:
+            self.list_results_labels[0].configure(text="?")
         
         if len(most_used_category) == 1:
             self.list_results_labels[1].configure(text=most_used_category[0])
@@ -355,7 +368,10 @@ class CategoryWindow(ctk.CTkFrame):
     def create_edit_delete_category(self):
         actual_state = self.lbl_title.cget("text")
         actual_data_categories = self.categories
-        actual_data_transactions = [value[4] for value in self.parent_ref.frm_transaction.transactions]
+        if not self.empty_table:
+            actual_data_transactions = [value[4] for value in self.transactions]
+        else:
+            actual_data_transactions = ""
         new_name = self.entry_name.get()
         new_category = self.smb_category.get()
 
@@ -387,7 +403,9 @@ class CategoryWindow(ctk.CTkFrame):
             self.load_data()
             self.parent_ref.frm_transaction.cbbox_category.configure(values=self.categories_names)
             self.refresh([tuple(value) for value in self.df.values.tolist()])
-            self.information_labels(self.categories)
+            self.information_labels()
+            self.refresh_colors()
+            self.parent_ref.frm_transaction.colors_cells = self.colors_cells
             self.entry_name.delete(0, "end")
             self.entry_name.focus()
             self.smb_category.set("Income")
@@ -400,7 +418,9 @@ class CategoryWindow(ctk.CTkFrame):
             self.load_data()
             self.parent_ref.frm_transaction.cbbox_category.configure(values=self.categories_names)
             self.refresh([tuple(value) for value in self.df.values.tolist()])
-            self.information_labels(self.categories)
+            self.information_labels()
+            self.refresh_colors()
+            self.parent_ref.frm_transaction.colors_cells = self.colors_cells
             self.lbl_title.configure(text="Create")
             self.entry_name.delete(0, "end")
             self.entry_name.focus()
@@ -427,7 +447,9 @@ class CategoryWindow(ctk.CTkFrame):
                 self.load_data()
                 self.parent_ref.frm_transaction.cbbox_category.configure(values=self.categories_names)
                 self.refresh([tuple(value) for value in self.df.values.tolist()])
-                self.information_labels(self.categories)
+                self.refresh_colors()
+                self.parent_ref.frm_transaction.colors_cells = self.colors_cells
+                self.information_labels()
                 self.lbl_title.configure(text="Create")
                 self.entry_name.delete(0, "end")
                 self.entry_name.focus()
@@ -435,8 +457,24 @@ class CategoryWindow(ctk.CTkFrame):
                 
     def load_data(self):
         self.categories = self.dbc.check_data(0)
-        self.df = pd.DataFrame(self.categories, columns=["Index", "Name", "Category"])
-        self.df = self.df.reset_index(drop=True)
-        self.df["№"] = self.df.index + 1
-        self.df = self.df[["№", "Name", "Category"]]
-        self.categories_names = [category[1] for category in self.categories]
+        self.transactions = self.dbt.check_data(0)
+        if len(self.categories) > 0:
+            self.parent_ref.empty_table = False
+            self.df = pd.DataFrame(self.categories, columns=["Index", "Name", "Category"])
+            self.df = self.df.reset_index(drop=True)
+            self.df["№"] = self.df.index + 1
+            self.df = self.df[["№", "Name", "Category"]]
+            self.categories_names = [category[1] for category in self.categories]
+            self.refresh_colors()
+        else:
+            self.df = pd.DataFrame(["No data"], columns=["Nothing"])
+            self.categories_names = ["Nothing"]
+            self.parent_ref.empty_table = True
+        self.empty_table = self.parent_ref.empty_table
+        
+    def refresh_colors(self):
+        for category in self.categories:
+            if category[2] == "Income":
+                self.colors_cells[category[1]] = ("#88B04B", "+")
+            else:
+                self.colors_cells[category[1]] = ("#BC6C25", "-")

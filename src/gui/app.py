@@ -24,6 +24,8 @@ class App(ctk.CTk):
         self.resizable(False, False)
         self.empty_table = None
         
+        os.makedirs("data", exist_ok=True)
+        
         self.pages = {}
         self.page_name_list = [
             "initial_page",

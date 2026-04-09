@@ -133,6 +133,15 @@ class CategoryWindow(ctk.CTkFrame):
                                         values=["==", ">", "<", ">=", "<="], width=40, command=options_filter)
         self.option_filter.grid(row=0, column=2, pady=10, sticky="snew")
         
+        if len(self.categories) > 0:
+            self.column_filter.configure(state="normal")
+            self.entry_filter.configure(state="normal")
+            self.option_filter.configure(state="normal")
+        else:
+            self.column_filter.configure(state="disabled")
+            self.entry_filter.configure(state="disabled")
+            self.option_filter.configure(state="disabled")
+
         self.table_categories = TableCategories(self.frm_table, [tuple(value) for value in self.df.values.tolist()], parent_ref=self)
         self.table_categories.grid(row=1, column=0, columnspan=3)
             

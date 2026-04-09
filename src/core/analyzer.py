@@ -4,14 +4,17 @@ Calculations for the dashboard.
 Generates a summary of money handling based on the chosen option (This month, previous month, custom range), 
 calculations, and graph creation
 
-- DataBaseCategories: Class to handle the data in the Categories table
+- DataBasedf_categories: Class to handle the data in the df_categories table
 - matplotlib.pyplot: To generate the 3 corresponding graphs
 - numpy: To calculate the list of colors in bar and pie charts
 """
 
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 from src.core.database import DataBaseCategories
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
+import pandas as pd
 dbc = DataBaseCategories()
 
 class Analyzer():
@@ -19,23 +22,25 @@ class Analyzer():
     Class responsible for summarizing the money
     """
     
-    def __init__(self, list_transactions, categories):
+    def __init__(self, df_transactions, df_categories):
         """
         Definition of variables and lists to perform the calculations
         
         Args:
-            list_transactions: List with the selected data (This month, Previous month, Custom range)
+            df_transactions: List with the selected data (This month, Previous month, Custom range)
             
         Returns:
             None
         """
-        
-        self.list_transactions = list_transactions
-        self.categories = categories
+        self.df_transactions = df_transactions
+        self.df_categories = df_categories
+        self.df_complete = pd.merge(df_transactions, df_categories, left_on="Category_ID", right_on="Name", how="left")
         self.list_income = []
         self.list_expense = []
         self.total_incomes = 0
         self.total_expenses = 0
+        self.percentage_savings = 0
+        self.top_expenses = self.df_complete[self.df_complete["Category"]=="Expense"].nlargest(5, "Amount")
         self.calculate()
         
     def calculate(self):
@@ -43,20 +48,102 @@ class Analyzer():
         Method that performs all calculations and stores the results
         in attributes, it does not print anything
         """
-        
-        categories_dict = {cat[1]: cat[2] for cat in self.categories}
-        for transaction in self.list_transactions:
-            cat_name = transaction[4]
-            cat_type = categories_dict.get(cat_name)
-            if cat_type == "Income":
-                self.list_income.append(transaction)
-            else:
-                self.list_expense.append(transaction)
-                
-        self.total_incomes = sum(i[3] for i in self.list_income)
-        self.total_expenses = sum(i[3] for i in self.list_expense)
+        self.total_incomes = self.df_complete[self.df_complete["Category"]=="Income"]["Amount"].sum()
+        self.total_expenses = self.df_complete[self.df_complete["Category"]=="Expense"]["Amount"].sum()
         self.current_balance = self.total_incomes - self.total_expenses
+        self.percentage_savings = (self.current_balance/self.total_incomes)*100
         
+    def total_incomes_chart(self):
+        plt.figure(figsize=(1.8, 1.8))
+        values = [self.total_incomes, self.total_expenses]
+        colors = ["#88B04B", "#B3C397"]
+        plt.pie(values, colors=colors,wedgeprops={'width': 0.3})
+        plt.axis("equal")
+        ax = plt.gca()
+        percentage = (self.total_incomes / (self.total_incomes + self.total_expenses)) * 100
+        ax.text(0, 0, f"{percentage:.2f}%", ha='center', va='center', fontsize=10, fontweight='bold', color="#213435")
+        plt.tight_layout()
+        fig = plt.gcf()
+        fig.patch.set_facecolor('none')
+        ax.set_facecolor('none')
+        return fig
+
+    def total_expenses_chart(self):
+        plt.figure(figsize=(1.8, 1.8))
+        values = [self.total_incomes, self.total_expenses]
+        colors = ["#B3C397", "#BC6C25"]
+        plt.pie(values, colors=colors, wedgeprops={'width': 0.3})
+        plt.axis("equal")
+        ax = plt.gca()
+        percentage = (self.total_expenses / (self.total_incomes + self.total_expenses)) * 100
+        ax.text(0, 0, f"{percentage:.2f}%", ha='center', va='center', fontsize=10, fontweight='bold', color="#213435")
+        plt.tight_layout()
+        fig = plt.gcf()
+        fig.patch.set_facecolor('none')
+        ax.set_facecolor('none')
+        return fig
+
+    def percentage_saving_chart(self):
+        plt.figure(figsize=(1.8, 1.8))
+        values = [self.current_balance, self.total_incomes]
+        colors = ["#648a64", "#B3C397"]
+        plt.pie(values, colors=colors, wedgeprops={'width': 0.3})
+        plt.axis("equal")
+        ax = plt.gca()
+        ax.text(0, 0, f"{self.percentage_savings:.2f}%", ha='center', va='center', fontsize=10, fontweight='bold', color="#213435")
+        plt.tight_layout()
+        fig = plt.gcf()
+        fig.patch.set_facecolor('none')
+        ax.set_facecolor('none')
+        return fig
+
+    def pie_chart(self):
+        plt.figure(figsize=(2.9, 2))
+        labels = []
+        values = []
+        for i in self.top_expenses.values.tolist():
+            labels.append(i[4])
+            values.append(i[3])
+        colors = plt.cm.Greens(np.linspace(0.3, 0.8, len(labels)))
+        desfase = [0.1]
+        desfase.append([0 for i in range(len(self.top_expenses)-1)])
+        desfase_unit = [item for sublist in desfase for item in (sublist if isinstance(sublist, list) else [sublist])]
+        plt.pie(values, labels=labels, autopct='%2.2f%%', colors=colors, explode=desfase_unit, startangle=90, 
+            textprops={'fontsize': 8, 'fontweight':'bold', 'color':'#213435'})
+        plt.tight_layout()
+        ax = plt.gca()
+        fig = plt.gcf()
+        fig.patch.set_facecolor('none')
+        ax.set_facecolor('none')
+        return fig
+
+    def line_chart(self):
+        plt.figure(figsize=(6, 2.4))
+        df_line_chart = self.df_complete
+        df_line_chart["Amount"] = np.where(self.df_complete["Category"]=="Expense", -self.df_complete["Amount"], self.df_complete["Amount"])
+        df_transactions_ordened = sorted(df_line_chart.values.tolist(), key=lambda x: x[1])
+        x_axis = []
+        y_axis = []
+        for i in df_transactions_ordened:
+            x_axis.append(i[1])
+            y_axis.append(i[3])
+        plt.plot(x_axis, y_axis, marker="o", linewidth=2, markersize=8, color="steelblue")
+        plt.fill_between(x_axis, y_axis, alpha=0.3, color="steelblue")
+        plt.tick_params(axis='both', which='both', length=0)
+        plt.tight_layout()
+        plt.xticks(fontsize=8, fontweight='bold', color='#213435')
+        plt.yticks(fontsize=8, fontweight='bold', color='#213435')
+        ax = plt.gca()
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.grid(False)
+        fig = plt.gcf()
+        fig.patch.set_facecolor('none')
+        ax.set_facecolor('none')
+        return fig
+
     def section_numeric_summary(self):
         """
         Method that prints the numerical summary using the already calculated attributes
@@ -81,11 +168,10 @@ class Analyzer():
         """
         
         print("\nTop Expenses")
-        self.list_expenses_ordened = sorted(self.list_expense, key=lambda x: x[3], reverse=True)
-        for i, value in enumerate(self.list_expenses_ordened):
+        for i, value in enumerate(self.top_expenses.values.tolist()):
             print(f"{i+1}. {value[4]} {value[3]:.2f}$")
             
-        print(f"\nPercentage of Savings: {(self.current_balance/self.total_incomes)*100:.2f}%")
+        print(f"\nPercentage of Savings: {self.percentage_savings:.2f}%")
         self.section_graphs()
         
     def section_graphs(self):
@@ -158,14 +244,15 @@ class Analyzer():
                 # Line chart
                 # ================================
                 plt.figure(figsize=(10, 5))
-                list_transactions_ordened = sorted(self.list_transactions, key=lambda x: x[1])
+                df_transactions_ordened = sorted(self.df_transactions, key=lambda x: x[1])
                 x_axis = []
                 y_axis = []
-                for i in list_transactions_ordened:
+                for i in df_transactions_ordened:
                     x_axis.append(i[1])
                     y_axis.append(i[3])
                 plt.plot(x_axis, y_axis, marker="o", linewidth=2, markersize=8, color="steelblue",
                         label="Accumulated Balance")
+                plt.fill_between(x_axis, y_axis, alpha=0.3, color="steelblue")
                 plt.suptitle("Evolution of Transactions", fontsize=14, y=0.98)
                 plt.xlabel("Elapsed dates")
                 plt.ylabel("Money")

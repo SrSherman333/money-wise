@@ -293,21 +293,20 @@ class TransactionWindow(ctk.CTkFrame):
                     self.entry_filter.delete(0, "end")
                 self.option_filter.focus_set()
 
-        self.option_filter = ctk.CTkComboBox(
-            self.frm_table,
-            font=ctk.CTkFont(size=13, weight="bold"),
-            button_color="#648a64",
-            button_hover_color="#213435",
-            values=["==", ">", "<", ">=", "<="],
-            command=options_filter,
-        )
+        self.option_filter = ctk.CTkComboBox(self.frm_table, font=ctk.CTkFont(size=13, weight="bold"), button_color="#648a64",
+            button_hover_color="#213435", values=["==", ">", "<", ">=", "<="], command=options_filter)
         self.option_filter.grid(row=0, column=2, pady=10)
 
-        self.table_transactions = TableTransactions(
-            self.frm_table,
-            [tuple(value) for value in self.data.values.tolist()],
-            parent_ref=self,
-        )
+        if len(self.transactions) > 0:
+            self.column_filter.configure(state="normal")
+            self.entry_filter.configure(state="normal")
+            self.option_filter.configure(state="normal")
+        else:
+            self.column_filter.configure(state="disabled")
+            self.entry_filter.configure(state="disabled")
+            self.option_filter.configure(state="disabled")
+
+        self.table_transactions = TableTransactions(self.frm_table, [tuple(value) for value in self.data.values.tolist()], parent_ref=self)
         self.table_transactions.grid(row=1, column=0, columnspan=3)
 
         # ------------------------------
@@ -975,7 +974,8 @@ class TransactionWindow(ctk.CTkFrame):
     def load_data(self):
         if not self.empty_table:
             self.transactions = self.dbt.check_data(0)
-            self.transactions = sorted( self.transactions, key=lambda x: datetime.strptime(x[1], "%Y-%m-%d"),  reverse=True)
+            self.transactions = sorted(self.transactions, key=lambda x: datetime.strptime(x[1], "%Y-%m-%d"),  reverse=True)
+            self.parent_ref.frm_category.transactions = self.transactions
             self.categories = self.parent_ref.frm_category.categories
             self.df = pd.DataFrame(
                 self.transactions,
@@ -988,10 +988,8 @@ class TransactionWindow(ctk.CTkFrame):
             self.data["Amount"] = [
                 "{:.2f}".format(i) for i in self.data["Amount"].values.tolist()
             ]
-            analyzer = Analyzer(
-                [tuple(value) for value in self.df.values.tolist()], self.categories
-            )
-            self.current_balance = analyzer.current_balance
+            self.analyzer = Analyzer(self.df, self.parent_ref.frm_category.df)
+            self.current_balance = self.analyzer.current_balance
         else:
             self.data = pd.DataFrame(["No data"], columns=["Nothing"])
             self.current_balance = 0
@@ -1001,11 +999,7 @@ class TransactionWindow(ctk.CTkFrame):
         del self.amount_column_data[0]
         self.data["Amount"] = self.amount_column_data
 
-        self.amount_column_data = [
-            float(amount.replace("$", ""))
-            for amount in self.amount_column_data
-            if amount is not str
-        ]
+        self.amount_column_data = [float(amount.replace("$", "")) for amount in self.amount_column_data if amount is not str]
 
         if self.current_balance >= 0:
             self.lbl_curent_balance.configure(

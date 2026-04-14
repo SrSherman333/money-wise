@@ -36,11 +36,14 @@ class Analyzer():
         self.df_categories = df_categories
         self.df_complete = pd.merge(df_transactions, df_categories, left_on="Category_ID", right_on="Name", how="left")
         self.list_income = []
-        self.list_expense = []
+        self.list_expense = self.df_complete[self.df_complete["Category"]=="Expense"]
+        self.list_expense = self.df_complete.groupby("Name")["Amount"].sum()
         self.total_incomes = 0
         self.total_expenses = 0
         self.percentage_savings = 0
-        self.top_expenses = self.df_complete[self.df_complete["Category"]=="Expense"].nlargest(5, "Amount")
+        self.expenses_ordened = self.list_expense.nlargest(len(self.df_transactions))
+        self.top_expenses = self.expenses_ordened.iloc[:5]
+        self.remaining_expenses = self.expenses_ordened.iloc[5:].sum()
         self.calculate()
         
     def calculate(self):
@@ -51,7 +54,7 @@ class Analyzer():
         self.total_incomes = self.df_complete[self.df_complete["Category"]=="Income"]["Amount"].sum()
         self.total_expenses = self.df_complete[self.df_complete["Category"]=="Expense"]["Amount"].sum()
         self.current_balance = self.total_incomes - self.total_expenses
-        self.percentage_savings = (self.current_balance/self.total_incomes)*100
+        self.percentage_savings = (self.current_balance/self.total_incomes)*100 if self.total_incomes>0 else 0.0
         
     def total_incomes_chart(self):
         plt.figure(figsize=(1.8, 1.8))
@@ -85,9 +88,14 @@ class Analyzer():
 
     def percentage_saving_chart(self):
         plt.figure(figsize=(1.8, 1.8))
-        values = [self.current_balance, self.total_incomes]
-        colors = ["#648a64", "#B3C397"]
-        plt.pie(values, colors=colors, wedgeprops={'width': 0.3})
+        if self.percentage_savings > 0:
+            values = [self.current_balance, self.total_incomes]
+            colors = ["#648a64", "#B3C397"]
+            plt.pie(values, colors=colors, wedgeprops={'width': 0.3})
+        else:
+            values = [1]
+            colors = ["#B3C397"]
+            plt.pie(values, colors=colors)
         plt.axis("equal")
         ax = plt.gca()
         ax.text(0, 0, f"{self.percentage_savings:.2f}%", ha='center', va='center', fontsize=10, fontweight='bold', color="#213435")
@@ -101,12 +109,15 @@ class Analyzer():
         plt.figure(figsize=(2.9, 2))
         labels = []
         values = []
-        for i in self.top_expenses.values.tolist():
-            labels.append(i[4])
-            values.append(i[3])
+        print(self.top_expenses.values.tolist())
+        for i, (name, value) in enumerate(self.top_expenses.items()):
+            labels.append(name)
+            values.append(value)
+        labels.append("Others")
+        values.append(self.remaining_expenses)
         colors = plt.cm.Greens(np.linspace(0.3, 0.8, len(labels)))
         desfase = [0.1]
-        desfase.append([0 for i in range(len(self.top_expenses)-1)])
+        desfase.append([0 for i in range(len(self.top_expenses))])
         desfase_unit = [item for sublist in desfase for item in (sublist if isinstance(sublist, list) else [sublist])]
         plt.pie(values, labels=labels, autopct='%2.2f%%', colors=colors, explode=desfase_unit, startangle=90, 
             textprops={'fontsize': 8, 'fontweight':'bold', 'color':'#213435'})
